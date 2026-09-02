@@ -1,0 +1,1 @@
+{"name":"DeepSeek Harness","description":"현재 환경에서 DeepSeek Harness를 직접 실행합니다.","notices":{"service-api-credentials":{"title":"API 자격 증명은 서비스 내부에만 저장","description":"DeepSeek Harness를 연 후 내부에서 API 키를 구성하세요. Redeven은 해당 키를 수신, 복사 또는 기록하지 않습니다."}}}
