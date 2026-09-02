@@ -2,7 +2,9 @@
 
 This repository is the declarative source of Redeven's built-in Managed Service templates.
 
-It publishes a versioned Go module containing a deterministic, integrity-checked catalog bundle. Service-specific metadata, localized copy, reviewed artifacts, and visual assets belong here. Runtime lifecycle logic and compatibility readers do not.
+It publishes a versioned Go module containing a deterministic, integrity-checked catalog bundle. Service-specific metadata, localized copy, recommended default releases, reviewed artifacts, and visual assets belong here. Runtime lifecycle logic and compatibility readers do not.
+
+Each built-in template declares one exact `recommended_version`. Redeven installs that release only when the user does not choose another source release. It is a recommendation and default, never an allowlist, minimum version, or automatic tracking policy.
 
 ## Layout
 

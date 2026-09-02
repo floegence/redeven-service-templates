@@ -17,7 +17,7 @@ import (
 	"strings"
 )
 
-const CatalogVersion = "v0.1.0"
+const CatalogVersion = "v0.2.0"
 
 var Locales = []string{
 	"en-US", "zh-CN", "zh-TW", "ja-JP", "ko-KR",
@@ -37,16 +37,14 @@ type IconReference struct {
 }
 
 type ReleaseDiscovery struct {
-	Source          string `json:"source"`
-	AllowPrerelease bool   `json:"allow_prerelease"`
-	AllowNonSemver  bool   `json:"allow_non_semver"`
+	Source string `json:"source"`
 }
 
 type TemplateDefinition struct {
 	SchemaVersion      int               `json:"schema_version"`
 	TemplateID         string            `json:"template_id"`
 	ServiceFamilyID    string            `json:"service_family_id"`
-	Version            string            `json:"version"`
+	RecommendedVersion string            `json:"recommended_version"`
 	Revision           int               `json:"revision"`
 	SortOrder          int               `json:"sort_order"`
 	DeveloperPreview   bool              `json:"developer_preview"`
@@ -58,7 +56,7 @@ type TemplateDefinition struct {
 	DefaultAccessMode  string            `json:"default_access_mode"`
 	SupportedPlatforms []string          `json:"supported_platforms,omitempty"`
 	PlatformArtifacts  map[string]string `json:"platform_artifacts,omitempty"`
-	ReleaseDiscovery   ReleaseDiscovery  `json:"release_discovery"`
+	ReleaseDiscovery   *ReleaseDiscovery `json:"release_discovery,omitempty"`
 	Notices            []Notice          `json:"notices"`
 	Icon               IconReference     `json:"icon"`
 	Spec               json.RawMessage   `json:"spec"`
@@ -85,7 +83,7 @@ type BundleTemplate struct {
 	SchemaVersion      int                     `json:"schema_version"`
 	TemplateID         string                  `json:"template_id"`
 	ServiceFamilyID    string                  `json:"service_family_id"`
-	Version            string                  `json:"version"`
+	RecommendedVersion string                  `json:"recommended_version"`
 	Revision           int                     `json:"revision"`
 	SortOrder          int                     `json:"sort_order"`
 	DeveloperPreview   bool                    `json:"developer_preview"`
@@ -97,7 +95,7 @@ type BundleTemplate struct {
 	DefaultAccessMode  string                  `json:"default_access_mode"`
 	SupportedPlatforms []string                `json:"supported_platforms,omitempty"`
 	PlatformArtifacts  map[string]string       `json:"platform_artifacts,omitempty"`
-	ReleaseDiscovery   ReleaseDiscovery        `json:"release_discovery"`
+	ReleaseDiscovery   *ReleaseDiscovery       `json:"release_discovery,omitempty"`
 	Notices            []Notice                `json:"notices"`
 	Spec               json.RawMessage         `json:"spec"`
 	Localizations      map[string]Localization `json:"localizations"`
@@ -197,7 +195,7 @@ func Generate(root string) (Output, error) {
 
 		bundleTemplates = append(bundleTemplates, BundleTemplate{
 			SchemaVersion: definition.SchemaVersion, TemplateID: definition.TemplateID,
-			ServiceFamilyID: definition.ServiceFamilyID, Version: definition.Version,
+			ServiceFamilyID: definition.ServiceFamilyID, RecommendedVersion: definition.RecommendedVersion,
 			Revision: definition.Revision, SortOrder: definition.SortOrder,
 			DeveloperPreview: definition.DeveloperPreview, DiskBytes: definition.DiskBytes,
 			SourceURL: definition.SourceURL, DockerSourceURL: definition.DockerSourceURL,
@@ -221,7 +219,7 @@ func Generate(root string) (Output, error) {
 	})
 	sort.Slice(inputs, func(i, j int) bool { return inputs[i].Path < inputs[j].Path })
 
-	bundleBytes, err := marshal(Bundle{SchemaVersion: 1, CatalogVersion: CatalogVersion, Locales: append([]string(nil), Locales...), Templates: bundleTemplates})
+	bundleBytes, err := marshal(Bundle{SchemaVersion: 2, CatalogVersion: CatalogVersion, Locales: append([]string(nil), Locales...), Templates: bundleTemplates})
 	if err != nil {
 		return Output{}, fmt.Errorf("encode bundle: %w", err)
 	}
@@ -268,8 +266,8 @@ func Verify(root string, output Output) error {
 }
 
 func validateDefinition(directory string, definition TemplateDefinition) error {
-	if definition.SchemaVersion != 1 || definition.TemplateID != directory || definition.ServiceFamilyID == "" || definition.Version == "" || definition.Revision < 1 || definition.DiskBytes < 1 {
-		return errors.New("identity, version, revision, or disk requirement is invalid")
+	if definition.SchemaVersion != 2 || definition.TemplateID != directory || definition.ServiceFamilyID == "" || definition.RecommendedVersion == "" || definition.Revision < 1 || definition.DiskBytes < 1 {
+		return errors.New("identity, recommended version, revision, or disk requirement is invalid")
 	}
 	if !validHTTPS(definition.SourceURL) || (definition.DockerSourceURL != "" && !validHTTPS(definition.DockerSourceURL)) {
 		return errors.New("source URLs must use HTTPS")
@@ -284,18 +282,36 @@ func validateDefinition(directory string, definition TemplateDefinition) error {
 		SchemaVersion int    `json:"schema_version"`
 		Kind          string `json:"kind"`
 	}
-	if err := json.Unmarshal(definition.Spec, &specHeader); err != nil || specHeader.SchemaVersion != 3 || specHeader.Kind != definition.Deployment {
-		return errors.New("TemplateSpec v3 kind must match deployment")
+	if err := json.Unmarshal(definition.Spec, &specHeader); err != nil || specHeader.SchemaVersion != 4 || specHeader.Kind != definition.Deployment {
+		return errors.New("TemplateSpec v4 kind must match deployment")
 	}
-	if definition.ReleaseDiscovery.Source != "npm" && definition.ReleaseDiscovery.Source != "oci" {
-		return errors.New("release discovery source must be npm or oci")
+	var retiredPolicy struct {
+		Container *struct {
+			ReleasePolicy json.RawMessage `json:"release_policy"`
+		} `json:"container"`
+	}
+	if err := json.Unmarshal(definition.Spec, &retiredPolicy); err != nil {
+		return errors.New("TemplateSpec v4 is invalid")
+	}
+	if retiredPolicy.Container != nil && len(retiredPolicy.Container.ReleasePolicy) != 0 {
+		return errors.New("TemplateSpec v4 cannot restrict source release selection")
 	}
 	if definition.Deployment == "host" {
-		if definition.ReleaseDiscovery.Source != "npm" || len(definition.SupportedPlatforms) == 0 || len(definition.PlatformArtifacts) != 0 {
+		if definition.ReleaseDiscovery == nil || definition.ReleaseDiscovery.Source != "npm" || len(definition.SupportedPlatforms) == 0 || len(definition.PlatformArtifacts) != 0 {
 			return errors.New("host template must declare npm discovery and supported platforms")
 		}
+		var spec struct {
+			Host *struct {
+				NPM *struct {
+					Version string `json:"version"`
+				} `json:"npm"`
+			} `json:"host"`
+		}
+		if err := json.Unmarshal(definition.Spec, &spec); err != nil || spec.Host == nil || spec.Host.NPM == nil || spec.Host.NPM.Version != definition.RecommendedVersion {
+			return errors.New("host recommended version must equal the exact npm package version")
+		}
 	} else if definition.Deployment == "container" {
-		if definition.ContainerMode != "single" || definition.ReleaseDiscovery.Source != "oci" || len(definition.PlatformArtifacts) == 0 {
+		if definition.ContainerMode != "single" || definition.ReleaseDiscovery == nil || definition.ReleaseDiscovery.Source != "oci" || len(definition.PlatformArtifacts) == 0 {
 			return errors.New("container template must declare single-container OCI artifacts")
 		}
 		for platform, artifact := range definition.PlatformArtifacts {
@@ -306,10 +322,15 @@ func validateDefinition(directory string, definition TemplateDefinition) error {
 			if _, err := hex.DecodeString(parts[1]); err != nil {
 				return fmt.Errorf("platform artifact %q has invalid digest", platform)
 			}
+			if tag := imageTag(parts[0]); tag != definition.RecommendedVersion {
+				return fmt.Errorf("platform artifact %q tag %q does not match recommended version %q", platform, tag, definition.RecommendedVersion)
+			}
 		}
 		if !bytes.Contains(definition.Spec, []byte("${REDEVEN_CATALOG_ARTIFACT}")) {
 			return errors.New("container spec must use the catalog artifact placeholder")
 		}
+	} else if definition.ReleaseDiscovery != nil {
+		return errors.New("Compose templates cannot declare single-release discovery")
 	}
 	noticeIDs := make(map[string]struct{}, len(definition.Notices))
 	for _, notice := range definition.Notices {
@@ -322,6 +343,14 @@ func validateDefinition(directory string, definition TemplateDefinition) error {
 		noticeIDs[notice.ID] = struct{}{}
 	}
 	return nil
+}
+
+func imageTag(reference string) string {
+	lastSlash, lastColon := strings.LastIndex(reference, "/"), strings.LastIndex(reference, ":")
+	if lastColon <= lastSlash {
+		return ""
+	}
+	return strings.TrimSpace(reference[lastColon+1:])
 }
 
 func validateLocalization(notices []Notice, localization Localization) error {

@@ -1,9 +1,9 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "template_id": "deepseek-harness-host",
   "service_family_id": "deepseek-harness-host",
-  "version": "0.1.1-rc.2",
-  "revision": 4,
+  "recommended_version": "0.1.1-rc.2",
+  "revision": 5,
   "sort_order": 10,
   "developer_preview": true,
   "disk_bytes": 2147483648,
@@ -11,13 +11,13 @@
   "deployment": "host",
   "default_access_mode": "desktop_loopback",
   "supported_platforms": ["darwin-amd64", "darwin-arm64", "linux-amd64", "linux-arm64"],
-  "release_discovery": {"source": "npm", "allow_prerelease": true},
+  "release_discovery": {"source": "npm"},
   "notices": [
     {"id": "service-api-credentials", "revision": 1, "severity": "info", "acknowledgement_required": false}
   ],
   "icon": {"path": "assets/icon.svg", "media_type": "image/svg+xml"},
   "spec": {
-    "schema_version": 3,
+    "schema_version": 4,
     "kind": "host",
     "endpoint": {"scheme": "http", "path": "/", "health_path": "/", "startup_timeout_sec": 45},
     "host": {
