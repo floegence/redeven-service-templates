@@ -17,7 +17,7 @@ import (
 	"strings"
 )
 
-const CatalogVersion = "v0.2.0"
+const CatalogVersion = "v0.3.0"
 
 var Locales = []string{
 	"en-US", "zh-CN", "zh-TW", "ja-JP", "ko-KR",
@@ -282,8 +282,8 @@ func validateDefinition(directory string, definition TemplateDefinition) error {
 		SchemaVersion int    `json:"schema_version"`
 		Kind          string `json:"kind"`
 	}
-	if err := json.Unmarshal(definition.Spec, &specHeader); err != nil || specHeader.SchemaVersion != 4 || specHeader.Kind != definition.Deployment {
-		return errors.New("TemplateSpec v4 kind must match deployment")
+	if err := json.Unmarshal(definition.Spec, &specHeader); err != nil || specHeader.SchemaVersion != 5 || specHeader.Kind != definition.Deployment {
+		return errors.New("TemplateSpec v5 kind must match deployment")
 	}
 	var retiredPolicy struct {
 		Container *struct {
@@ -291,10 +291,36 @@ func validateDefinition(directory string, definition TemplateDefinition) error {
 		} `json:"container"`
 	}
 	if err := json.Unmarshal(definition.Spec, &retiredPolicy); err != nil {
-		return errors.New("TemplateSpec v4 is invalid")
+		return errors.New("TemplateSpec v5 is invalid")
 	}
 	if retiredPolicy.Container != nil && len(retiredPolicy.Container.ReleasePolicy) != 0 {
-		return errors.New("TemplateSpec v4 cannot restrict source release selection")
+		return errors.New("TemplateSpec v5 cannot restrict source release selection")
+	}
+	var openTargetSpec struct {
+		Host *struct {
+			OpenTarget *struct {
+				Mode       string `json:"mode"`
+				LinePrefix string `json:"line_prefix"`
+			} `json:"open_target"`
+		} `json:"host"`
+		Container *struct {
+			OpenTarget json.RawMessage `json:"open_target"`
+		} `json:"container"`
+		Compose *struct {
+			OpenTarget json.RawMessage `json:"open_target"`
+		} `json:"compose"`
+	}
+	if err := json.Unmarshal(definition.Spec, &openTargetSpec); err != nil {
+		return errors.New("TemplateSpec v5 is invalid")
+	}
+	if openTargetSpec.Container != nil && len(openTargetSpec.Container.OpenTarget) != 0 || openTargetSpec.Compose != nil && len(openTargetSpec.Compose.OpenTarget) != 0 {
+		return errors.New("open target is supported only for host templates")
+	}
+	if openTargetSpec.Host != nil && openTargetSpec.Host.OpenTarget != nil {
+		openTarget := openTargetSpec.Host.OpenTarget
+		if openTarget.Mode != "startup_output_url" || !validLinePrefix(openTarget.LinePrefix) {
+			return errors.New("host open target is invalid")
+		}
 	}
 	if definition.Deployment == "host" {
 		if definition.ReleaseDiscovery == nil || definition.ReleaseDiscovery.Source != "npm" || len(definition.SupportedPlatforms) == 0 || len(definition.PlatformArtifacts) != 0 {
@@ -343,6 +369,18 @@ func validateDefinition(directory string, definition TemplateDefinition) error {
 		noticeIDs[notice.ID] = struct{}{}
 	}
 	return nil
+}
+
+func validLinePrefix(value string) bool {
+	if strings.TrimSpace(value) == "" || len(value) > 128 {
+		return false
+	}
+	for _, r := range value {
+		if r < 0x20 || r == 0x7f {
+			return false
+		}
+	}
+	return true
 }
 
 func imageTag(reference string) string {
