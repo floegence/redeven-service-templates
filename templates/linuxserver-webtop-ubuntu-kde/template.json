@@ -2,8 +2,8 @@
   "schema_version": 2,
   "template_id": "linuxserver-webtop-ubuntu-kde",
   "service_family_id": "linuxserver-webtop-ubuntu-kde",
-  "recommended_version": "654ea8e3-ls177",
-  "revision": 2,
+  "recommended_version": "ubuntu-kde-03514d90-ls14",
+  "revision": 3,
   "sort_order": 30,
   "developer_preview": false,
   "disk_bytes": 6442450944,
@@ -12,8 +12,8 @@
   "container_mode": "single",
   "default_access_mode": "unified_proxy",
   "platform_artifacts": {
-    "linux-amd64": "lscr.io/linuxserver/webtop:654ea8e3-ls177@sha256:277ccc2688301ab076b6654ecb031a0061f34199add3d77503073ff3d8da429e",
-    "linux-arm64": "lscr.io/linuxserver/webtop:654ea8e3-ls177@sha256:3c35983ef7148cd14dd93d57dff9791d6a6b9d6018781e252edcfae0fe7d2f17"
+    "linux-amd64": "lscr.io/linuxserver/webtop:ubuntu-kde-03514d90-ls14@sha256:84b31987ce1cb487ec44de3c5a1b4ae0398e72e8fe9a25fec62c119aa9f3bdbb",
+    "linux-arm64": "lscr.io/linuxserver/webtop:ubuntu-kde-03514d90-ls14@sha256:724571c759ced711feebcb2dfe03ce9be8f7431051fc12c3cb0cf4aea66446c3"
   },
   "release_discovery": {"source": "oci"},
   "notices": [

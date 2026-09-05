@@ -13,9 +13,16 @@ Each template lives at `templates/<template-id>/` with one `template.json`, ten 
 ## Build and verify
 
 ```sh
-go run ./cmd/build-catalog
+go run ./cmd/build-catalog --check-registry
 go run ./cmd/build-catalog --verify
 go test ./...
 ```
+
+`check-registry` is the publish-time OCI preflight. It resolves each OCI
+template's recommended tag, requires a manifest index, verifies the Linux
+amd64 and arm64 descriptors and their exact declared digests, and fails with a
+stable reason for missing, unauthorized, rate-limited, malformed, timed-out,
+or unavailable Registry responses. Run it before generating or publishing a
+catalog bundle; it does not rewrite template files or generated artifacts.
 
 The root Go package exports immutable copies of the catalog bundle and manifest, plus the release version and bundle SHA-256. Consumers must validate the embedded bundle before starting their template catalog or Managed Service runtime.
