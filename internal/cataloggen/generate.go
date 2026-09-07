@@ -17,7 +17,7 @@ import (
 	"strings"
 )
 
-const CatalogVersion = "v0.4.1"
+const CatalogVersion = "v0.4.2"
 
 var Locales = []string{
 	"en-US", "zh-CN", "zh-TW", "ja-JP", "ko-KR",
@@ -129,6 +129,16 @@ type Output struct {
 }
 
 func Generate(root string) (Output, error) {
+	return GenerateWithVersion(root, CatalogVersion)
+}
+
+// GenerateWithVersion builds a deterministic bundle using the supplied
+// catalog version. The explicit version lets release tooling stage a new
+// catalog atomically before changing this package's source constant.
+func GenerateWithVersion(root, catalogVersion string) (Output, error) {
+	if strings.TrimSpace(catalogVersion) == "" {
+		return Output{}, errors.New("catalog version is required")
+	}
 	if _, err := os.Stat(filepath.Join(root, "compatibility")); err == nil {
 		return Output{}, errors.New("compatibility directory is forbidden")
 	} else if !errors.Is(err, os.ErrNotExist) {
@@ -219,12 +229,12 @@ func Generate(root string) (Output, error) {
 	})
 	sort.Slice(inputs, func(i, j int) bool { return inputs[i].Path < inputs[j].Path })
 
-	bundleBytes, err := marshal(Bundle{SchemaVersion: 2, CatalogVersion: CatalogVersion, Locales: append([]string(nil), Locales...), Templates: bundleTemplates})
+	bundleBytes, err := marshal(Bundle{SchemaVersion: 2, CatalogVersion: catalogVersion, Locales: append([]string(nil), Locales...), Templates: bundleTemplates})
 	if err != nil {
 		return Output{}, fmt.Errorf("encode bundle: %w", err)
 	}
 	bundleDigest := digest(bundleBytes)
-	manifestBytes, err := marshal(Manifest{SchemaVersion: 1, CatalogVersion: CatalogVersion, BundlePath: "dist/catalog.bundle.json", BundleSHA256: bundleDigest, Inputs: inputs})
+	manifestBytes, err := marshal(Manifest{SchemaVersion: 1, CatalogVersion: catalogVersion, BundlePath: "dist/catalog.bundle.json", BundleSHA256: bundleDigest, Inputs: inputs})
 	if err != nil {
 		return Output{}, fmt.Errorf("encode manifest: %w", err)
 	}

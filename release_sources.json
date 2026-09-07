@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "sources": [
+    {
+      "template_id": "deepseek-harness-host",
+      "kind": "npm",
+      "package_name": "@deepseek-ai/dsh",
+      "registry_url": "https://registry.npmjs.org/",
+      "dist_tag": "latest",
+      "repository_url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+      "repository_directory": "apps/cli"
+    },
+    {
+      "template_id": "deepseek-harness-container",
+      "kind": "oci",
+      "registry_url": "https://ghcr.io",
+      "repository": "runzhliu/deepseek-harness",
+      "canonical_tag_policy": "semver_without_market_suffix",
+      "platforms": ["linux-amd64", "linux-arm64"]
+    }
+  ]
+}

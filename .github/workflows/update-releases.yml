@@ -1,0 +1,110 @@
+name: Update reviewed releases
+
+on:
+  schedule:
+    - cron: '17 3 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: service-template-release-updates
+  cancel-in-progress: false
+
+jobs:
+  update:
+    name: Discover and publish reviewed releases
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Create isolated update worktree
+        id: worktree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main --tags --prune
+          base="$(git rev-parse origin/main)"
+          worktree="$(mktemp -d "${RUNNER_TEMP}/service-template-release.XXXXXX")"
+          branch="codex/automation/deepseek-release-${GITHUB_RUN_ID}"
+          git worktree add -b "$branch" "$worktree" "$base"
+          {
+            echo "path=$worktree"
+            echo "base=$base"
+            echo "branch=$branch"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Discover and apply releases
+        working-directory: ${{ steps.worktree.outputs.path }}
+        run: go run ./cmd/release-watcher
+
+      - name: Verify generated catalog and Registry digests
+        working-directory: ${{ steps.worktree.outputs.path }}
+        run: |
+          go run ./cmd/build-catalog --check-registry --verify
+          go test ./...
+
+      - name: Commit and prepare immutable tag
+        id: commit
+        working-directory: ${{ steps.worktree.outputs.path }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          version="$(sed -nE 's/^const Version = "(v[0-9]+\.[0-9]+\.[0-9]+)"$/\1/p' catalog.go)"
+          test -n "$version"
+          if git ls-remote --exit-code --refs origin "refs/tags/$version" >/dev/null 2>&1; then
+            echo "catalog tag $version already exists; refusing to rewrite an immutable tag" >&2
+            exit 1
+          fi
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add release_sources.json catalog.go internal/cataloggen/generate.go cmd/release-watcher internal/releasewatcher templates dist .github/workflows/update-releases.yml
+          git commit -m 'fix(catalog): refresh deepseek harness releases'
+          git tag -a "$version" -m "Release service template catalog $version"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Publish main and catalog tag atomically
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main --tags --prune
+          test "$(git rev-parse origin/main)" = "${{ steps.worktree.outputs.base }}"
+          git switch main
+          git merge --ff-only "${{ steps.worktree.outputs.branch }}"
+          git push --atomic origin main "refs/tags/${{ steps.commit.outputs.version }}"
+          gh release create "${{ steps.commit.outputs.version }}" --verify-tag --title "Service template catalog ${{ steps.commit.outputs.version }}" --generate-notes
+
+      - name: Report no-op
+        if: steps.commit.outputs.changed == 'false'
+        run: echo 'No reviewed release changed; main and tags were left untouched.'
+
+      - name: Report failure
+        if: failure()
+        shell: bash
+        run: |
+          echo '::error title=Release watcher failed::No catalog or main update was published.'
+          {
+            echo '### Release watcher failed'
+            echo
+            echo 'Upstream metadata, catalog validation, or the immutable main/tag push failed. No successful catalog publication was recorded.'
+          } >> "$GITHUB_STEP_SUMMARY"
