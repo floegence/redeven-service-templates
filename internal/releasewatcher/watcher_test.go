@@ -2,272 +2,426 @@ package releasewatcher
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/floegence/redeven-service-templates/internal/cataloggen"
 )
 
-func TestDiscoverAndApply(t *testing.T) {
-	const amd64 = "sha256:9f2de8bfecfa87f82d0fdfc8a7edbc88e59046b2a11c9817ff9e1e826da886e0"
-	const arm64 = "sha256:386c8bb5578d4976b16056041073613b355ac7dc46203f80fb51c99e5aeaa907"
-	server := httptest.NewTLSServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
-		response.Header().Set("Content-Type", "application/json")
-		switch {
-		case request.URL.Path == "/@deepseek-ai/dsh":
-			_, _ = response.Write([]byte(`{"name":"@deepseek-ai/dsh","dist-tags":{"latest":"0.1.2-rc.1"},"versions":{"0.1.2-rc.1":{"version":"0.1.2-rc.1","repository":{"type":"git","url":"git+https://github.com/deepseek-ai/deepseek-harness.git","directory":"apps/cli"},"dist":{"integrity":"sha512-RPq48TzxvwpdT9/7W1tbhZDBMmeK+bxDrX9cqQC27Wx/LqtgJF8PSa3b3xriU8oxtvhwYmk21w2cej3uMQrnVA=="}}}}`))
-		case request.URL.Path == "/token":
-			_, _ = response.Write([]byte(`{"token":"test-token"}`))
-		case request.URL.Path == "/v2/runzhliu/deepseek-harness/tags/list":
-			_, _ = response.Write([]byte(`{"name":"runzhliu/deepseek-harness","tags":["0.1.1-rc.2","0.1.2-rc.1-r1","0.1.2-rc.1-r1-market.1","not-a-version"]}`))
-		case strings.HasPrefix(request.URL.Path, "/v2/runzhliu/deepseek-harness/manifests/"):
-			_, _ = response.Write([]byte(`{"schemaVersion":2,"manifests":[{"digest":"` + amd64 + `","platform":{"os":"linux","architecture":"amd64"}},{"digest":"` + arm64 + `","platform":{"os":"linux","architecture":"arm64"}}]}`))
-		default:
-			http.NotFound(response, request)
-		}
-	}))
-	defer server.Close()
+var integrity = "sha512-" + base64.StdEncoding.EncodeToString(make([]byte, 64))
+var platformBody = []byte(`{"schemaVersion":2,"mediaType":"application/vnd.oci.image.manifest.v1+json","config":{},"layers":[]}`)
+var platformDigest = fmt.Sprintf("sha256:%x", sha256.Sum256(platformBody))
 
-	sources := Sources{
-		NPMPackage: DefaultNPMPackage, NPMRegistry: server.URL,
-		RepositoryURL: DefaultRepositoryURL, RepositoryDir: DefaultRepositoryDir,
-		GHCRRegistry: server.URL, GHCRRepository: DefaultGHCRRepository,
-	}
-	plan, err := Discover(t.Context(), Options{Client: server.Client(), Sources: sources})
+func testConfig(t *testing.T) Config {
+	t.Helper()
+	config, err := LoadConfig("../..")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if plan.HostVersion != "0.1.2-rc.1" || plan.ContainerVersion != "0.1.2-rc.1-r1" {
-		t.Fatalf("unexpected plan: %+v", plan)
-	}
-	if plan.ContainerArtifacts["linux-amd64"] != "ghcr.io/runzhliu/deepseek-harness:0.1.2-rc.1-r1@"+amd64 {
-		t.Fatalf("unexpected amd64 artifact: %s", plan.ContainerArtifacts["linux-amd64"])
-	}
-
-	root := t.TempDir()
-	if err := copyTree(filepath.Join("..", ".."), root); err != nil {
-		t.Fatal(err)
-	}
-	downgradeCatalogForTest(t, root)
-	changed, err := Apply(root, plan)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !changed {
-		t.Fatal("Apply reported no change for an older catalog")
-	}
-	beforeNoOp := make(map[string][]byte)
-	for _, relative := range []string{
-		"templates/deepseek-harness-host/template.json",
-		"templates/deepseek-harness-container/template.json",
-		"catalog.go", "internal/cataloggen/generate.go",
-		"dist/catalog.bundle.json", "dist/catalog.bundle.manifest.json", "dist/catalog.bundle.sha256",
-	} {
-		data, err := os.ReadFile(filepath.Join(root, relative))
-		if err != nil {
-			t.Fatal(err)
-		}
-		beforeNoOp[relative] = data
-	}
-	changed, err = Apply(root, plan)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if changed {
-		t.Fatal("Apply changed an already current catalog")
-	}
-	for relative, before := range beforeNoOp {
-		after, err := os.ReadFile(filepath.Join(root, relative))
-		if err != nil {
-			t.Fatal(err)
-		}
-		if string(after) != string(before) {
-			t.Fatalf("no-op changed %s", relative)
-		}
-	}
-
-	var host map[string]any
-	readJSONFile(t, filepath.Join(root, "templates/deepseek-harness-host/template.json"), &host)
-	if host["recommended_version"] != "0.1.2-rc.1" || host["revision"] != float64(8) {
-		t.Fatalf("host update = %+v", host)
-	}
-	var container map[string]any
-	readJSONFile(t, filepath.Join(root, "templates/deepseek-harness-container/template.json"), &container)
-	if container["recommended_version"] != "0.1.2-rc.1-r1" || container["revision"] != float64(5) {
-		t.Fatalf("container update = %+v", container)
-	}
-	version, err := readCatalogVersion(root)
-	if err != nil || version != "v0.4.2" {
-		t.Fatalf("catalog version = %q, err=%v", version, err)
-	}
+	return config
 }
 
-func TestDiscoverRejectsMissingIntegrity(t *testing.T) {
-	server := httptest.NewTLSServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
-		if request.URL.Path == "/@deepseek-ai/dsh" {
-			_, _ = response.Write([]byte(`{"name":"@deepseek-ai/dsh","dist-tags":{"latest":"0.1.2-rc.1"},"versions":{"0.1.2-rc.1":{"version":"0.1.2-rc.1","repository":{"type":"git","url":"git+https://github.com/deepseek-ai/deepseek-harness.git","directory":"apps/cli"},"dist":{}}}}`))
+func npmMetadata(source Source) map[string]any {
+	return map[string]any{"name": source.PackageName, "dist-tags": map[string]any{"latest": "0.1.2-rc.1"}, "versions": map[string]any{"0.1.2-rc.1": map[string]any{
+		"name": source.PackageName, "version": "0.1.2-rc.1",
+		"repository": map[string]any{"type": "git", "url": source.RepositoryURL, "directory": source.RepositoryDirectory},
+		"dist":       map[string]any{"integrity": integrity},
+	}}}
+}
+
+func registryFixture(t *testing.T, mutate func(string, map[string]any), statusPath string, status int) (Config, *http.Client, func()) {
+	t.Helper()
+	config := testConfig(t)
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		route := r.URL.Path
+		if route == statusPath {
+			w.WriteHeader(status)
 			return
 		}
-		http.NotFound(response, request)
-	}))
-	defer server.Close()
-	sources := DefaultSources()
-	sources.NPMRegistry = server.URL
-	if _, err := discoverNPM(t.Context(), server.Client(), sources); err == nil || !strings.Contains(err.Error(), "SHA-512 integrity") {
-		t.Fatalf("discoverNPM error = %v", err)
-	}
-}
-
-func TestDiscoverNPMRejectsUntrustedMetadata(t *testing.T) {
-	valid := `{"name":"@deepseek-ai/dsh","dist-tags":{"latest":"0.1.2-rc.1"},"versions":{"0.1.2-rc.1":{"version":"0.1.2-rc.1","repository":{"type":"git","url":"git+https://github.com/deepseek-ai/deepseek-harness.git","directory":"apps/cli"},"dist":{"integrity":"sha512-RPq48TzxvwpdT9/7W1tbhZDBMmeK+bxDrX9cqQC27Wx/LqtgJF8PSa3b3xriU8oxtvhwYmk21w2cej3uMQrnVA=="}}}}`
-	tests := []struct {
-		name    string
-		mutate  func(string) string
-		message string
-	}{
-		{"missing latest", func(string) string { return `{"name":"@deepseek-ai/dsh","dist-tags":{},"versions":{}}` }, "latest dist-tag"},
-		{"deprecated", func(value string) string {
-			return strings.Replace(value, `"dist":{"integrity"`, `"deprecated":"use another package","dist":{"integrity"`, 1)
-		}, "deprecated"},
-		{"wrong repository", func(value string) string {
-			return strings.Replace(value, "deepseek-ai/deepseek-harness.git", "someone/other.git", 1)
-		}, "repository"},
-		{"missing integrity", func(value string) string {
-			return strings.Replace(value, `"integrity":"sha512-RPq48TzxvwpdT9/7W1tbhZDBMmeK+bxDrX9cqQC27Wx/LqtgJF8PSa3b3xriU8oxtvhwYmk21w2cej3uMQrnVA=="`, "", 1)
-		}, "SHA-512 integrity"},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			server := httptest.NewTLSServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
-				_, _ = response.Write([]byte(test.mutate(valid)))
-			}))
-			defer server.Close()
-			sources := DefaultSources()
-			sources.NPMRegistry = server.URL
-			_, err := discoverNPM(t.Context(), server.Client(), sources)
-			if err == nil || !strings.Contains(err.Error(), test.message) {
-				t.Fatalf("discoverNPM error = %v, want %q", err, test.message)
-			}
-		})
-	}
-}
-
-func TestDiscoverOCIRejectsMissingPlatform(t *testing.T) {
-	server := httptest.NewTLSServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		var payload map[string]any
 		switch {
-		case request.URL.Path == "/token":
-			_, _ = response.Write([]byte(`{"token":"token"}`))
-		case request.URL.Path == "/v2/runzhliu/deepseek-harness/tags/list":
-			_, _ = response.Write([]byte(`{"tags":["0.1.2-rc.1-r1","0.1.2-rc.1-r1-market.1","0.1.2.99"]}`))
+		case route == "/"+config.Sources[0].PackageName:
+			payload = npmMetadata(config.Sources[0])
+		case route == "/token":
+			payload = map[string]any{"token": "fixture"}
+		case strings.HasSuffix(route, "/tags/list"):
+			if r.Header.Get("Authorization") != "Bearer fixture" {
+				t.Error("missing bearer token")
+			}
+			tags := []string{"0.1.1-rc.2", "0.1.2-rc.1-r1-market.1", "01.0.0", "2.0.0-market.1", "1.0.0+build", "not-a-version"}
+			if r.URL.Query().Get("last") == "" {
+				w.Header().Set("Link", `<`+route+`?n=100&last=page1>; rel="next"`)
+			} else {
+				tags = []string{"0.1.2-rc.1-r1"}
+			}
+			payload = map[string]any{"name": config.Sources[1].Repository, "tags": tags}
+		case strings.HasSuffix(route, "/manifests/"+platformDigest):
+			w.Header().Set("Docker-Content-Digest", platformDigest)
+			_, _ = w.Write(platformBody)
+			return
+		case strings.Contains(route, "/manifests/"):
+			if !strings.HasSuffix(route, "/0.1.2-rc.1-r1") {
+				t.Errorf("selected unexpected tag: %s", route)
+			}
+			descriptors := []any{}
+			for _, arch := range []string{"amd64", "arm64"} {
+				descriptors = append(descriptors, map[string]any{"digest": platformDigest, "platform": map[string]any{"os": "linux", "architecture": arch}})
+			}
+			payload = map[string]any{"schemaVersion": 2, "mediaType": "application/vnd.oci.image.index.v1+json", "manifests": descriptors}
 		default:
-			_, _ = response.Write([]byte(`{"schemaVersion":2,"manifests":[{"digest":"sha256:9f2de8bfecfa87f82d0fdfc8a7edbc88e59046b2a11c9817ff9e1e826da886e0","platform":{"os":"linux","architecture":"amd64"}}]}`))
+			http.NotFound(w, r)
+			return
 		}
+		if mutate != nil {
+			mutate(route, payload)
+		}
+		_ = json.NewEncoder(w).Encode(payload)
 	}))
-	defer server.Close()
-	sources := DefaultSources()
-	sources.GHCRRegistry = server.URL
-	if _, err := discoverOCI(t.Context(), server.Client(), sources); err == nil || !strings.Contains(err.Error(), "amd64 and arm64") {
-		t.Fatalf("discoverOCI error = %v", err)
+	for i := range config.Sources {
+		config.Sources[i].RegistryURL = server.URL
 	}
+	return config, server.Client(), server.Close
 }
 
-func TestDiscoverOCIRejectsInsecureRegistry(t *testing.T) {
-	sources := DefaultSources()
-	sources.GHCRRegistry = "http://ghcr.example.invalid"
-	if _, err := discoverOCI(t.Context(), http.DefaultClient, sources); err == nil || !strings.Contains(err.Error(), "absolute HTTPS") {
-		t.Fatalf("discoverOCI error = %v", err)
+func TestDiscoverPaginatedCanonicalReleases(t *testing.T) {
+	config, client, closeServer := registryFixture(t, nil, "", 0)
+	defer closeServer()
+	plan, err := discover(t.Context(), config, client)
+	if err != nil {
+		t.Fatal(err)
 	}
-}
-
-func TestSemVerCanonicalSelection(t *testing.T) {
-	values := []struct {
-		value string
-		valid bool
-	}{
-		{"0.1.2-rc.1-r1", true}, {"1.0.0", true}, {"1.0.0-market.1", true},
-		{"01.0.0", false}, {"1.0", false}, {"1.0.0-01", false},
+	if plan.Releases[0].Version != "0.1.2-rc.1" || plan.Releases[1].Version != "0.1.2-rc.1-r1" {
+		t.Fatalf("unexpected releases: %+v", plan)
 	}
-	for _, value := range values {
-		if got := validVersion(value.value); got != value.valid {
-			t.Errorf("validVersion(%q) = %v, want %v", value.value, got, value.valid)
+	for _, platform := range config.Sources[1].Platforms {
+		want := config.Sources[1].image() + ":0.1.2-rc.1-r1@" + platformDigest
+		if plan.Releases[1].Artifacts[platform] != want {
+			t.Fatalf("artifact mismatch")
 		}
 	}
-	if compareVersions("1.0.0", "1.0.0-rc.9") <= 0 || compareVersions("1.0.0-rc.10", "1.0.0-rc.2") <= 0 {
-		t.Fatal("semver precedence is incorrect")
-	}
 }
 
-func TestFetchFailsClosedForRegistryStatusesAndTransport(t *testing.T) {
-	for _, status := range []int{401, 403, 404, 429} {
-		t.Run(strconv.Itoa(status), func(t *testing.T) {
-			server := httptest.NewTLSServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) { response.WriteHeader(status) }))
-			defer server.Close()
-			_, err := fetchJSON(t.Context(), server.Client(), server.URL, "registry")
-			if err == nil || !strings.Contains(err.Error(), "HTTP "+strconv.Itoa(status)) {
-				t.Fatalf("fetch error = %v", err)
+func TestRejectUntrustedMetadata(t *testing.T) {
+	for _, scenario := range []string{"npm-name", "latest", "deprecated", "repository", "integrity", "version", "oci-name", "platform", "digest", "duplicate", "index"} {
+		t.Run(scenario, func(t *testing.T) {
+			config, client, closeServer := registryFixture(t, func(route string, p map[string]any) {
+				if strings.HasPrefix(route, "/@") {
+					v := p["versions"].(map[string]any)["0.1.2-rc.1"].(map[string]any)
+					switch scenario {
+					case "npm-name":
+						p["name"] = "different"
+					case "latest":
+						p["dist-tags"] = map[string]any{}
+					case "deprecated":
+						v["deprecated"] = "retired"
+					case "repository":
+						v["repository"] = map[string]any{"type": "git", "url": "unrelated"}
+					case "integrity":
+						v["dist"] = map[string]any{}
+					case "version":
+						v["version"] = "1.0.0"
+					}
+				}
+				if scenario == "oci-name" && strings.HasSuffix(route, "/tags/list") {
+					p["name"] = "unrelated"
+				}
+				if !strings.Contains(route, "/manifests/") {
+					return
+				}
+				descriptors := p["manifests"].([]any)
+				switch scenario {
+				case "platform":
+					p["manifests"] = descriptors[:1]
+				case "digest":
+					descriptors[0].(map[string]any)["digest"] = "sha256:bad"
+				case "duplicate":
+					p["manifests"] = append(descriptors, descriptors[0])
+				case "index":
+					p["mediaType"] = "application/json"
+				}
+			}, "", 0)
+			defer closeServer()
+			if _, err := discover(t.Context(), config, client); err == nil {
+				t.Fatal("accepted untrusted metadata")
 			}
 		})
 	}
-	transportError := errors.New("network unavailable")
-	client := &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) { return nil, transportError })}
-	if _, err := fetchJSON(context.Background(), client, "https://registry.invalid", "registry"); err == nil || !strings.Contains(err.Error(), "request failed") {
-		t.Fatalf("transport error = %v", err)
+}
+
+func TestDigestBodyMismatch(t *testing.T) {
+	config, client, closeServer := registryFixture(t, nil, "", 0)
+	defer closeServer()
+	original := client.Transport
+	client.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		response, err := original.RoundTrip(r)
+		if err == nil && strings.Contains(r.URL.Path, "/manifests/sha256:") {
+			response.Header.Set("Docker-Content-Digest", "sha256:"+strings.Repeat("0", 64))
+		}
+		return response, err
+	})
+	if _, err := discover(t.Context(), config, client); err == nil || !strings.Contains(err.Error(), "digest mismatch") {
+		t.Fatalf("error=%v", err)
 	}
 }
 
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
-func (function roundTripFunc) RoundTrip(request *http.Request) (*http.Response, error) {
-	return function(request)
-}
+func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
 
-func downgradeCatalogForTest(t *testing.T, root string) {
-	t.Helper()
-	for relative, version := range map[string]string{
-		"templates/deepseek-harness-host/template.json":      "0.1.1-rc.2",
-		"templates/deepseek-harness-container/template.json": "0.1.1-rc.2",
-	} {
-		path := filepath.Join(root, relative)
-		data, err := os.ReadFile(path)
-		if err != nil {
-			t.Fatal(err)
-		}
-		text := string(data)
-		if strings.Contains(relative, "container") {
-			text = strings.ReplaceAll(text, "0.1.2-rc.1-r1", version)
-		} else {
-			text = strings.ReplaceAll(text, "0.1.2-rc.1", version)
-		}
-		data = []byte(text)
-		if err := os.WriteFile(path, data, 0o644); err != nil {
-			t.Fatal(err)
+func TestNetworkFailures(t *testing.T) {
+	config := testConfig(t)
+	paths := []string{"/" + config.Sources[0].PackageName, "/token", "/v2/" + config.Sources[1].Repository + "/tags/list", "/v2/" + config.Sources[1].Repository + "/manifests/0.1.2-rc.1-r1"}
+	for _, p := range paths {
+		for _, status := range []int{401, 403, 404, 429} {
+			t.Run(fmt.Sprintf("%s/%d", p, status), func(t *testing.T) {
+				config, client, closeServer := registryFixture(t, nil, p, status)
+				defer closeServer()
+				if _, err := discover(t.Context(), config, client); err == nil || !strings.Contains(err.Error(), fmt.Sprintf("HTTP %d", status)) {
+					t.Fatalf("error=%v", err)
+				}
+			})
 		}
 	}
-	for _, relative := range []string{"catalog.go", "internal/cataloggen/generate.go"} {
-		path := filepath.Join(root, relative)
-		data, err := os.ReadFile(path)
-		if err != nil {
-			t.Fatal(err)
+	for _, failure := range []error{context.DeadlineExceeded, errors.New("network unavailable")} {
+		client := &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) { return nil, failure })}
+		if _, err := discover(t.Context(), config, client); !errors.Is(err, failure) {
+			t.Fatalf("error=%v", err)
 		}
-		data = []byte(strings.ReplaceAll(string(data), "v0.4.2", "v0.4.1"))
-		if err := os.WriteFile(path, data, 0o644); err != nil {
-			t.Fatal(err)
-		}
+	}
+	ctx, cancel := context.WithDeadline(t.Context(), time.Now().Add(-time.Second))
+	defer cancel()
+	if _, err := discover(ctx, config, &http.Client{}); !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("timeout=%v", err)
 	}
 }
 
-func readJSONFile(t *testing.T, path string, destination any) {
+func TestSourceAndPaginationValidation(t *testing.T) {
+	for _, url := range []string{"http://ghcr.io", "https://user:password@ghcr.io", "https://ghcr.io/other", "https://ghcr.io?query=1"} {
+		config := testConfig(t)
+		config.Sources[0].RegistryURL = url
+		if config.validate() == nil {
+			t.Fatalf("accepted %s", url)
+		}
+	}
+	config := testConfig(t)
+	config.Sources = append(config.Sources, config.Sources[0])
+	if config.validate() == nil {
+		t.Fatal("accepted duplicate")
+	}
+	for _, link := range []string{`<https://attacker.test/v2/repo/tags/list>; rel="next"`, `<http://ghcr.io/v2/repo/tags/list>; rel="next"`, `</different>; rel="next"`, "malformed"} {
+		if _, err := nextTagsPage("https://ghcr.io/v2/repo/tags/list", link); err == nil {
+			t.Fatalf("accepted %s", link)
+		}
+	}
+}
+
+func currentPlan(t *testing.T, root string) ReleasePlan {
 	t.Helper()
-	data, err := os.ReadFile(path)
+	config, err := LoadConfig(root)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := json.Unmarshal(data, destination); err != nil {
+	plan := ReleasePlan{}
+	for _, source := range config.Sources {
+		data, err := os.ReadFile(filepath.Join(root, "templates", source.TemplateID, "template.json"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var def cataloggen.TemplateDefinition
+		if err := decodeJSON(data, &def); err != nil {
+			t.Fatal(err)
+		}
+		plan.Releases = append(plan.Releases, Release{Source: source, Version: def.RecommendedVersion, Artifacts: def.PlatformArtifacts, Integrity: integrity})
+	}
+	return plan
+}
+func fixtureRoot(t *testing.T) string {
+	t.Helper()
+	root := t.TempDir()
+	if err := copyTree("../..", root); err != nil {
 		t.Fatal(err)
+	}
+	return root
+}
+func snapshot(t *testing.T, root string) map[string]string {
+	t.Helper()
+	result := map[string]string{}
+	if err := filepath.WalkDir(root, func(p string, e os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if e.IsDir() {
+			return nil
+		}
+		b, err := os.ReadFile(p)
+		if err != nil {
+			return err
+		}
+		relative, _ := filepath.Rel(root, p)
+		result[relative] = fmt.Sprintf("%x", sha256.Sum256(b))
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	return result
+}
+func localValidation(ctx context.Context, root string) error {
+	version, _, err := catalogConstants(root)
+	if err != nil {
+		return err
+	}
+	output, err := cataloggen.GenerateWithVersion(root, version)
+	if err != nil {
+		return err
+	}
+	return cataloggen.Verify(root, output)
+}
+
+func TestApplyOnlyChangesAffectedRevisionAndIsDeterministic(t *testing.T) {
+	root := fixtureRoot(t)
+	initialVersion, _, err := catalogConstants(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	initialParts := strings.Split(initialVersion, ".")
+	initialPatch, _ := strconv.Atoi(initialParts[2])
+	expectedVersion := fmt.Sprintf("%s.%s.%d", initialParts[0], initialParts[1], initialPatch+1)
+	plan := currentPlan(t, root)
+	plan.Releases[0].Version = "9.0.0"
+	hostPath := filepath.Join(root, "templates", plan.Releases[0].Source.TemplateID, "template.json")
+	initialData, _ := os.ReadFile(hostPath)
+	var initialHost cataloggen.TemplateDefinition
+	if err := decodeJSON(initialData, &initialHost); err != nil {
+		t.Fatal(err)
+	}
+	containerPath := filepath.Join(root, "templates", plan.Releases[1].Source.TemplateID, "template.json")
+	beforeContainer, _ := os.ReadFile(containerPath)
+	before := snapshot(t, root)
+	changed, err := apply(t.Context(), root, plan, localValidation)
+	if err != nil || !changed {
+		t.Fatalf("changed=%v err=%v", changed, err)
+	}
+	afterContainer, _ := os.ReadFile(containerPath)
+	if string(beforeContainer) != string(afterContainer) {
+		t.Fatal("unrelated container revision changed")
+	}
+	data, _ := os.ReadFile(filepath.Join(root, "templates", plan.Releases[0].Source.TemplateID, "template.json"))
+	var host cataloggen.TemplateDefinition
+	if err := decodeJSON(data, &host); err != nil {
+		t.Fatal(err)
+	}
+	if host.Revision != initialHost.Revision+1 || host.RecommendedVersion != "9.0.0" {
+		t.Fatalf("host=%+v", host)
+	}
+	version, _, _ := catalogConstants(root)
+	if version != expectedVersion {
+		t.Fatalf("version=%s", version)
+	}
+	after := snapshot(t, root)
+	changed, err = apply(t.Context(), root, plan, func(context.Context, string) error { t.Fatal("no-op ran validator"); return nil })
+	if err != nil || changed || !reflect.DeepEqual(after, snapshot(t, root)) {
+		t.Fatalf("no-op changed checkout: %v", err)
+	}
+	second := fixtureRoot(t)
+	if !reflect.DeepEqual(before, snapshot(t, second)) {
+		t.Fatal("fixture is not deterministic")
+	}
+	if _, err := apply(t.Context(), second, plan, localValidation); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(after, snapshot(t, second)) {
+		t.Fatal("update bytes are not deterministic")
+	}
+}
+
+func TestApplyFailureLeavesAllFilesUnchanged(t *testing.T) {
+	for _, scenario := range []string{"validation", "constant", "identity", "moved-tag", "integrity", "regression"} {
+		t.Run(scenario, func(t *testing.T) {
+			root := fixtureRoot(t)
+			plan := currentPlan(t, root)
+			plan.Releases[0].Version = "9.0.0"
+			validate := localValidation
+			switch scenario {
+			case "validation":
+				validate = func(context.Context, string) error { return errors.New("gate failure") }
+			case "constant":
+				initialVersion, _, _ := catalogConstants(root)
+				p := filepath.Join(root, "catalog.go")
+				data, _ := os.ReadFile(p)
+				_ = os.WriteFile(p, []byte(strings.ReplaceAll(string(data), initialVersion, "v0.0.0")), 0644)
+			case "identity":
+				plan.Releases[0].Source.TemplateID = "unrelated"
+			case "moved-tag":
+				plan.Releases[1].Artifacts["linux-amd64"] = strings.Split(plan.Releases[1].Artifacts["linux-amd64"], "@")[0] + "@sha256:" + strings.Repeat("0", 64)
+			case "integrity":
+				plan.Releases[0].Integrity = ""
+			case "regression":
+				plan.Releases[0].Version = "0.0.1"
+			}
+			before := snapshot(t, root)
+			if _, err := apply(t.Context(), root, plan, validate); err == nil {
+				t.Fatal("expected error")
+			}
+			if !reflect.DeepEqual(before, snapshot(t, root)) {
+				t.Fatal("failed update changed files")
+			}
+		})
+	}
+}
+
+func TestReplaceRollback(t *testing.T) {
+	root := t.TempDir()
+	originals := map[string][]byte{"a": []byte("a"), "b": []byte("b")}
+	for p, b := range originals {
+		_ = os.WriteFile(filepath.Join(root, p), b, 0644)
+	}
+	count := 0
+	err := replaceFiles(root, originals, map[string][]byte{"a": []byte("new"), "b": []byte("new")}, func(a, b string) error {
+		count++
+		if count == 2 {
+			return errors.New("disk error")
+		}
+		return os.Rename(a, b)
+	})
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	for p, b := range originals {
+		actual, _ := os.ReadFile(filepath.Join(root, p))
+		if string(actual) != string(b) {
+			t.Fatal("rollback failed")
+		}
+	}
+}
+
+func TestSemVer(t *testing.T) {
+	ordered := []string{"1.0.0-alpha", "1.0.0-alpha.1", "1.0.0-alpha.beta", "1.0.0-beta", "1.0.0-beta.2", "1.0.0-beta.11", "1.0.0-rc.1", "1.0.0"}
+	for i, v := range ordered {
+		if !validVersion(v) {
+			t.Fatal(v)
+		}
+		if i > 0 && compareVersions(ordered[i-1], v) >= 0 {
+			t.Fatal("ordering")
+		}
+	}
+	if compareVersions("1.0.0-99999999999999999999999", "1.0.0-x") >= 0 {
+		t.Fatal("numeric overflow")
+	}
+	for _, v := range []string{"1.0.0-01", "01.0.0", "v1.0.0", "1.0.0 ", "1.0"} {
+		if validVersion(v) {
+			t.Fatal(v)
+		}
 	}
 }

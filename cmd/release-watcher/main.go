@@ -26,13 +26,15 @@ func main() {
 		fatalf("release discovery failed: %v", err)
 	}
 	if *check {
-		fmt.Printf("Host %s (%s)\nContainer %s\n", plan.HostVersion, plan.HostIntegrity, plan.ContainerVersion)
-		for platform, artifact := range plan.ContainerArtifacts {
-			fmt.Printf("%s %s\n", platform, artifact)
+		for _, release := range plan.Releases {
+			fmt.Printf("%s %s %s\n", release.Source.TemplateID, release.Version, release.Integrity)
+			for _, platform := range release.Source.Platforms {
+				fmt.Printf("%s %s\n", platform, release.Artifacts[platform])
+			}
 		}
 		return
 	}
-	changed, err := releasewatcher.Apply(root, plan)
+	changed, err := releasewatcher.Apply(context.Background(), root, plan)
 	if err != nil {
 		fatalf("release update failed: %v", err)
 	}
@@ -40,7 +42,7 @@ func main() {
 		fmt.Println("Release catalog is already current")
 		return
 	}
-	fmt.Printf("Updated DeepSeek Harness releases: host=%s container=%s\n", plan.HostVersion, plan.ContainerVersion)
+	fmt.Println("Updated verified catalog releases")
 }
 
 func fatalf(format string, args ...any) {

@@ -1,5 +1,6 @@
 {
   "schema_version": 1,
+  "catalog_bump": "patch",
   "sources": [
     {
       "template_id": "deepseek-harness-host",

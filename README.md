@@ -33,13 +33,20 @@ verified upstream releases without changing the checkout. Running it without
 `--check` updates only the reviewed catalog inputs after both sources pass
 validation: the official npm `latest` dist-tag for Host and the canonical
 SemVer GHCR tag (excluding `-market.*` aliases) for the community Container
-image. The watcher records exact platform digests and never follows a floating
+image. It enumerates all bounded Registry tag pages, verifies platform manifest
+bytes against their SHA-256 descriptors, and rejects moved recommended tags.
+Only changed templates increment their revision; `catalog_bump: patch` selects
+the next catalog version. The watcher records exact platform digests and never follows a floating
 image tag or silently upgrades an installed service.
 
 The GitHub Actions workflow runs this command daily and on manual dispatch. It
 stages changes in a temporary automation branch, runs the catalog generator,
 OCI preflight, and all Go tests, then atomically publishes the new `main` tip
 and immutable catalog tag. Any upstream, validation, race, or tag collision
-failure leaves `main` and generated artifacts unchanged.
+failure leaves remote `main` and published generated artifacts unchanged. A
+standalone update also stages and validates all candidate bytes before writing
+the checkout. An uncertain push response requires inspecting remote refs; it
+never authorizes overwriting a tag. Catalog publication uses the immutable Go
+module tag and does not require a separate GitHub Release object.
 
 The root Go package exports immutable copies of the catalog bundle and manifest, plus the release version and bundle SHA-256. Consumers must validate the embedded bundle before starting their template catalog or Managed Service runtime.

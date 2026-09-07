@@ -14,9 +14,10 @@ concurrency:
 
 jobs:
   update:
-    name: Discover and publish reviewed releases
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    env:
+      GOWORK: 'off'
     steps:
       - name: Checkout main
         uses: actions/checkout@v5
@@ -34,10 +35,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git fetch origin main --tags --prune
+          git fetch origin main
           base="$(git rev-parse origin/main)"
+          git merge --ff-only "$base"
           worktree="$(mktemp -d "${RUNNER_TEMP}/service-template-release.XXXXXX")"
-          branch="codex/automation/deepseek-release-${GITHUB_RUN_ID}"
+          branch="codex/automation/catalog-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           git worktree add -b "$branch" "$worktree" "$base"
           {
             echo "path=$worktree"
@@ -45,66 +47,50 @@ jobs:
             echo "branch=$branch"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Discover and apply releases
+      - name: Discover, generate, preflight and test staged releases
         working-directory: ${{ steps.worktree.outputs.path }}
         run: go run ./cmd/release-watcher
 
-      - name: Verify generated catalog and Registry digests
-        working-directory: ${{ steps.worktree.outputs.path }}
-        run: |
-          go run ./cmd/build-catalog --check-registry --verify
-          go test ./...
-
-      - name: Commit and prepare immutable tag
+      - name: Commit the verified candidate
         id: commit
         working-directory: ${{ steps.worktree.outputs.path }}
         shell: bash
         run: |
           set -euo pipefail
           if git diff --quiet; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo 'changed=false' >> "$GITHUB_OUTPUT"
             exit 0
-          fi
-          version="$(sed -nE 's/^const Version = "(v[0-9]+\.[0-9]+\.[0-9]+)"$/\1/p' catalog.go)"
-          test -n "$version"
-          if git ls-remote --exit-code --refs origin "refs/tags/$version" >/dev/null 2>&1; then
-            echo "catalog tag $version already exists; refusing to rewrite an immutable tag" >&2
-            exit 1
           fi
           git diff --check
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add release_sources.json catalog.go internal/cataloggen/generate.go cmd/release-watcher internal/releasewatcher templates dist .github/workflows/update-releases.yml
+          git add catalog.go internal/cataloggen/generate.go templates dist
           git commit -m 'fix(catalog): refresh deepseek harness releases'
-          git tag -a "$version" -m "Release service template catalog $version"
-          echo "changed=true" >> "$GITHUB_OUTPUT"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
+          test -z "$(git status --porcelain)"
+          echo 'changed=true' >> "$GITHUB_OUTPUT"
 
-      - name: Publish main and catalog tag atomically
+      - name: Fast-forward main and publish the immutable tag atomically
         if: steps.commit.outputs.changed == 'true'
         env:
-          GH_TOKEN: ${{ github.token }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          git fetch origin main --tags --prune
-          test "$(git rev-parse origin/main)" = "${{ steps.worktree.outputs.base }}"
-          git switch main
-          git merge --ff-only "${{ steps.worktree.outputs.branch }}"
-          git push --atomic origin main "refs/tags/${{ steps.commit.outputs.version }}"
-          gh release create "${{ steps.commit.outputs.version }}" --verify-tag --title "Service template catalog ${{ steps.commit.outputs.version }}" --generate-notes
+          BASE: ${{ steps.worktree.outputs.base }}
+          BRANCH: ${{ steps.worktree.outputs.branch }}
+        run: bash scripts/publish_catalog.sh "$BASE" "$BRANCH"
 
       - name: Report no-op
         if: steps.commit.outputs.changed == 'false'
-        run: echo 'No reviewed release changed; main and tags were left untouched.'
+        run: echo 'No source release changed; main and tags are unchanged.'
 
       - name: Report failure
         if: failure()
-        shell: bash
         run: |
-          echo '::error title=Release watcher failed::No catalog or main update was published.'
-          {
-            echo '### Release watcher failed'
-            echo
-            echo 'Upstream metadata, catalog validation, or the immutable main/tag push failed. No successful catalog publication was recorded.'
-          } >> "$GITHUB_STEP_SUMMARY"
+          echo '::error title=Release watcher failed::Catalog publication did not complete. Inspect the immutable remote refs before retrying an uncertain network result.'
+          echo 'Release discovery, validation, or atomic publication failed. Existing release tags are never moved or overwritten.' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove this run's temporary worktree and private branch
+        if: always() && steps.worktree.outputs.path != ''
+        env:
+          WORKTREE: ${{ steps.worktree.outputs.path }}
+          BRANCH: ${{ steps.worktree.outputs.branch }}
+        run: |
+          git worktree remove --force "$WORKTREE"
+          git branch -D "$BRANCH"
