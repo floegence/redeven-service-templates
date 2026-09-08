@@ -8,7 +8,7 @@ Each built-in template declares one exact `recommended_version`. Redeven install
 
 ## Layout
 
-Each template lives at `templates/<template-id>/` with one `template.json`, ten explicit locale files under `locales/`, and reviewed local assets under `assets/`. Compatibility readers and executable lifecycle code are intentionally forbidden.
+Each template lives at `templates/<template-id>/` with one `template.json`, ten explicit locale files under `locales/`, and reviewed local assets under `assets/`. TemplateSpec v6 declares Host lifecycle hook scripts as data. The Host start script launches the application; an optional after-start hook persists opening information in the private launch directory, and an optional open hook returns one URL. Output defaults to discard; templates that need application output explicitly select private_file. Redeven owns execution, identity validation, permissions, and private output retention. Compatibility readers and separate lifecycle executors are forbidden.
 
 ## Build and verify
 

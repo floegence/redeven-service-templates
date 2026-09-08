@@ -3,7 +3,7 @@
   "template_id": "linuxserver-webtop-ubuntu-kde",
   "service_family_id": "linuxserver-webtop-ubuntu-kde",
   "recommended_version": "ubuntu-kde-03514d90-ls14",
-  "revision": 3,
+  "revision": 4,
   "sort_order": 30,
   "developer_preview": false,
   "disk_bytes": 6442450944,
@@ -21,7 +21,7 @@
   ],
   "icon": {"path": "assets/icon.svg", "media_type": "image/svg+xml"},
   "spec": {
-    "schema_version": 5,
+    "schema_version": 6,
     "kind": "container",
     "endpoint": {"scheme": "http", "container_port": 3000, "path": "/", "health_path": "/", "startup_timeout_sec": 180},
     "container": {

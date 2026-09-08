@@ -17,7 +17,7 @@ import (
 	"strings"
 )
 
-const CatalogVersion = "v0.4.3"
+const CatalogVersion = "v0.5.0"
 
 var Locales = []string{
 	"en-US", "zh-CN", "zh-TW", "ja-JP", "ko-KR",
@@ -292,8 +292,8 @@ func validateDefinition(directory string, definition TemplateDefinition) error {
 		SchemaVersion int    `json:"schema_version"`
 		Kind          string `json:"kind"`
 	}
-	if err := json.Unmarshal(definition.Spec, &specHeader); err != nil || specHeader.SchemaVersion != 5 || specHeader.Kind != definition.Deployment {
-		return errors.New("TemplateSpec v5 kind must match deployment")
+	if err := json.Unmarshal(definition.Spec, &specHeader); err != nil || specHeader.SchemaVersion != 6 || specHeader.Kind != definition.Deployment {
+		return errors.New("TemplateSpec v6 kind must match deployment")
 	}
 	var retiredPolicy struct {
 		Container *struct {
@@ -301,35 +301,43 @@ func validateDefinition(directory string, definition TemplateDefinition) error {
 		} `json:"container"`
 	}
 	if err := json.Unmarshal(definition.Spec, &retiredPolicy); err != nil {
-		return errors.New("TemplateSpec v5 is invalid")
+		return errors.New("TemplateSpec v6 is invalid")
 	}
 	if retiredPolicy.Container != nil && len(retiredPolicy.Container.ReleasePolicy) != 0 {
-		return errors.New("TemplateSpec v5 cannot restrict source release selection")
+		return errors.New("TemplateSpec v6 cannot restrict source release selection")
 	}
-	var openTargetSpec struct {
-		Host *struct {
-			OpenTarget *struct {
-				Mode       string `json:"mode"`
-				LinePrefix string `json:"line_prefix"`
-			} `json:"open_target"`
-		} `json:"host"`
-		Container *struct {
-			OpenTarget json.RawMessage `json:"open_target"`
-		} `json:"container"`
-		Compose *struct {
-			OpenTarget json.RawMessage `json:"open_target"`
-		} `json:"compose"`
+	var lifecycle struct {
+		Host      map[string]json.RawMessage `json:"host"`
+		Container map[string]json.RawMessage `json:"container"`
+		Compose   map[string]json.RawMessage `json:"compose"`
 	}
-	if err := json.Unmarshal(definition.Spec, &openTargetSpec); err != nil {
-		return errors.New("TemplateSpec v5 is invalid")
+	if err := json.Unmarshal(definition.Spec, &lifecycle); err != nil {
+		return err
 	}
-	if openTargetSpec.Container != nil && len(openTargetSpec.Container.OpenTarget) != 0 || openTargetSpec.Compose != nil && len(openTargetSpec.Compose.OpenTarget) != 0 {
-		return errors.New("open target is supported only for host templates")
+	for _, fields := range []map[string]json.RawMessage{lifecycle.Host, lifecycle.Container, lifecycle.Compose} {
+		if _, exists := fields["open_target"]; exists {
+			return errors.New("retired open target is not supported")
+		}
 	}
-	if openTargetSpec.Host != nil && openTargetSpec.Host.OpenTarget != nil {
-		openTarget := openTargetSpec.Host.OpenTarget
-		if openTarget.Mode != "startup_output_url" || !validLinePrefix(openTarget.LinePrefix) {
-			return errors.New("host open target is invalid")
+	for _, fields := range []map[string]json.RawMessage{lifecycle.Container, lifecycle.Compose} {
+		for _, key := range []string{"after_start_script", "open_script", "output_mode"} {
+			if _, exists := fields[key]; exists {
+				return errors.New("lifecycle hooks are supported only for host templates")
+			}
+		}
+	}
+	for _, key := range []string{"after_start_script", "open_script"} {
+		if raw, exists := lifecycle.Host[key]; exists {
+			var script string
+			if err := json.Unmarshal(raw, &script); err != nil || len(script) > 128*1024 || strings.ContainsRune(script, 0) {
+				return errors.New("host lifecycle hook is invalid")
+			}
+		}
+	}
+	if raw, exists := lifecycle.Host["output_mode"]; exists {
+		var mode string
+		if err := json.Unmarshal(raw, &mode); err != nil || (mode != "" && mode != "discard" && mode != "private_file") {
+			return errors.New("host output mode is invalid")
 		}
 	}
 	if definition.Deployment == "host" {
@@ -379,18 +387,6 @@ func validateDefinition(directory string, definition TemplateDefinition) error {
 		noticeIDs[notice.ID] = struct{}{}
 	}
 	return nil
-}
-
-func validLinePrefix(value string) bool {
-	if strings.TrimSpace(value) == "" || len(value) > 128 {
-		return false
-	}
-	for _, r := range value {
-		if r < 0x20 || r == 0x7f {
-			return false
-		}
-	}
-	return true
 }
 
 func imageTag(reference string) string {

@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-const Version = "v0.4.3"
+const Version = "v0.5.0"
 
 //go:embed dist/catalog.bundle.json
 var bundle []byte

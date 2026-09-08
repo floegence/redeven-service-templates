@@ -40,7 +40,7 @@ func TestEmbeddedBundleShape(t *testing.T) {
 		t.Fatalf("unexpected catalog shape: %+v", bundle)
 	}
 	for index, template := range bundle.Templates {
-		if template.RecommendedVersion == "" || len(template.Version) != 0 || template.Spec.SchemaVersion != 5 {
+		if template.RecommendedVersion == "" || len(template.Version) != 0 || template.Spec.SchemaVersion != 6 {
 			t.Fatalf("template %d recommendation contract is invalid: %+v", index, template)
 		}
 		if len(template.Localizations) != len(bundle.Locales) {
