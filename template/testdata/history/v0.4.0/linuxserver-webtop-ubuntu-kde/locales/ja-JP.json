@@ -1,0 +1,1 @@
+{"name":"LinuxServer Webtop · Ubuntu（KDE Plasma）","description":"Ubuntu ベースの KDE Plasma デスクトップを分離コンテナ内で実行します。標準の Ubuntu Desktop（GNOME）とは外観が異なります。","notices":{"interactive-desktop-root-and-network":{"title":"コンテナの root 権限と外部ネットワーク","description":"このデスクトップを開けるユーザーは、コンテナ内で root 権限を取得できます。コンテナは外部ネットワークにも接続できます。信頼できるユーザーとのみ共有してください。"}}}

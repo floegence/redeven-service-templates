@@ -1,0 +1,44 @@
+{
+  "schema_version": 2,
+  "template_id": "linuxserver-webtop-ubuntu-kde",
+  "service_family_id": "linuxserver-webtop-ubuntu-kde",
+  "recommended_version": "654ea8e3-ls177",
+  "revision": 2,
+  "sort_order": 30,
+  "developer_preview": false,
+  "disk_bytes": 6442450944,
+  "source_url": "https://github.com/linuxserver/docker-webtop",
+  "deployment": "container",
+  "container_mode": "single",
+  "default_access_mode": "unified_proxy",
+  "platform_artifacts": {
+    "linux-amd64": "lscr.io/linuxserver/webtop:654ea8e3-ls177@sha256:277ccc2688301ab076b6654ecb031a0061f34199add3d77503073ff3d8da429e",
+    "linux-arm64": "lscr.io/linuxserver/webtop:654ea8e3-ls177@sha256:3c35983ef7148cd14dd93d57dff9791d6a6b9d6018781e252edcfae0fe7d2f17"
+  },
+  "release_discovery": {"source": "oci"},
+  "notices": [
+    {"id": "interactive-desktop-root-and-network", "revision": 1, "severity": "warning", "acknowledgement_required": true}
+  ],
+  "icon": {"path": "assets/icon.svg", "media_type": "image/svg+xml"},
+  "spec": {
+    "schema_version": 4,
+    "kind": "container",
+    "endpoint": {"scheme": "http", "container_port": 3000, "path": "/", "health_path": "/", "startup_timeout_sec": 180},
+    "container": {
+      "image": "${REDEVEN_CATALOG_ARTIFACT}",
+      "environment": {
+        "PUID": "${REDEVEN_RUNTIME_UID}", "PGID": "${REDEVEN_RUNTIME_GID}", "TZ": "${REDEVEN_RUNTIME_TIMEZONE}",
+        "TITLE": "Ubuntu KDE", "START_DOCKER": "false", "FILE_MANAGER_PATH": "/workspace",
+        "SELKIES_USE_CPU": "true|locked", "SELKIES_ENABLE_SHARING": "false|locked", "SELKIES_ENABLE_COLLAB": "false|locked",
+        "SELKIES_ENABLE_SHARED": "false|locked", "SELKIES_UI_SIDEBAR_SHOW_SHARING": "false|locked"
+      },
+      "mounts": [
+        {"resource_id": "config", "type": "volume", "source": "config", "target": "/config"},
+        {"resource_id": "workspace", "type": "workspace", "target": "/workspace"}
+      ],
+      "read_only_root": false,
+      "pids_limit": 2048,
+      "runtime_profile": "interactive_desktop"
+    }
+  }
+}

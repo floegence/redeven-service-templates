@@ -1,0 +1,44 @@
+{
+  "schema_version": 2,
+  "template_id": "linuxserver-webtop-debian-xfce",
+  "service_family_id": "linuxserver-webtop-debian-xfce",
+  "recommended_version": "debian-xfce-5945573f-ls91",
+  "revision": 3,
+  "sort_order": 40,
+  "developer_preview": false,
+  "disk_bytes": 6442450944,
+  "source_url": "https://github.com/linuxserver/docker-webtop",
+  "deployment": "container",
+  "container_mode": "single",
+  "default_access_mode": "unified_proxy",
+  "platform_artifacts": {
+    "linux-amd64": "lscr.io/linuxserver/webtop:debian-xfce-5945573f-ls91@sha256:6edbb9e46f111375018413fb6a8cd1345e67ab7ebbf1633fe4c03b025bedd57d",
+    "linux-arm64": "lscr.io/linuxserver/webtop:debian-xfce-5945573f-ls91@sha256:aba019c83c77d62c76dc1ed19d0948c1e4316f3be34591e448cd94effb5d24c3"
+  },
+  "release_discovery": {"source": "oci"},
+  "notices": [
+    {"id": "interactive-desktop-root-and-network", "revision": 1, "severity": "warning", "acknowledgement_required": true}
+  ],
+  "icon": {"path": "assets/icon.svg", "media_type": "image/svg+xml"},
+  "spec": {
+    "schema_version": 5,
+    "kind": "container",
+    "endpoint": {"scheme": "http", "container_port": 3000, "path": "/", "health_path": "/", "startup_timeout_sec": 180},
+    "container": {
+      "image": "${REDEVEN_CATALOG_ARTIFACT}",
+      "environment": {
+        "PUID": "${REDEVEN_RUNTIME_UID}", "PGID": "${REDEVEN_RUNTIME_GID}", "TZ": "${REDEVEN_RUNTIME_TIMEZONE}",
+        "TITLE": "Debian XFCE", "START_DOCKER": "false", "FILE_MANAGER_PATH": "/workspace",
+        "SELKIES_USE_CPU": "true|locked", "SELKIES_ENABLE_SHARING": "false|locked", "SELKIES_ENABLE_COLLAB": "false|locked",
+        "SELKIES_ENABLE_SHARED": "false|locked", "SELKIES_UI_SIDEBAR_SHOW_SHARING": "false|locked"
+      },
+      "mounts": [
+        {"resource_id": "config", "type": "volume", "source": "config", "target": "/config"},
+        {"resource_id": "workspace", "type": "workspace", "target": "/workspace"}
+      ],
+      "read_only_root": false,
+      "pids_limit": 2048,
+      "runtime_profile": "interactive_desktop"
+    }
+  }
+}

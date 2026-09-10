@@ -13,7 +13,7 @@ func TestCatalogPublication(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, scenario := range []string{"success", "main-race", "tag-collision", "push-race"} {
+	for _, scenario := range []string{"success", "main-race", "tag-collision", "push-race", "contract-failure"} {
 		t.Run(scenario, func(t *testing.T) {
 			root := t.TempDir()
 			remote := filepath.Join(root, "remote.git")
@@ -36,6 +36,14 @@ func TestCatalogPublication(t *testing.T) {
 			_ = os.Mkdir(hooks, 0755)
 			git(repo, "config", "core.hooksPath", hooks)
 			_ = os.WriteFile(filepath.Join(repo, "catalog.go"), []byte("const Version = \"v0.4.1\"\n"), 0644)
+			_ = os.Mkdir(filepath.Join(repo, "scripts"), 0755)
+			// Publication tests isolate the gate's outcome; the real gate owns
+			// contract tests, which include this publication transaction suite.
+			gate := "#!/bin/sh\nexit 0\n"
+			if scenario == "contract-failure" {
+				gate = "#!/bin/sh\nexit 1\n"
+			}
+			_ = os.WriteFile(filepath.Join(repo, "scripts/check_contracts.sh"), []byte(gate), 0644)
 			git(repo, "add", ".")
 			git(repo, "commit", "-m", "test(catalog): baseline")
 			git(repo, "push", "origin", "main")

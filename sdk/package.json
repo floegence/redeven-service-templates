@@ -1,0 +1,12 @@
+{
+  "name": "@floegence/redeven-service-templates",
+  "version": "0.6.0",
+  "description": "Published Redeven Service Template contracts and GitHub source acquisition",
+  "type": "commonjs",
+  "main": "index.cjs",
+  "types": "index.d.ts",
+  "files": ["index.cjs", "index.d.ts", "schema", "README.md"],
+  "engines": {"node": ">=26.0.0 <27"},
+  "repository": {"type": "git", "url": "git+https://github.com/floegence/redeven-service-templates.git"},
+  "scripts": {"test": "node --test *.test.cjs"}
+}

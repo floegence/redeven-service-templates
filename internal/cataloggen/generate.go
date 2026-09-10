@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
@@ -15,9 +14,11 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/floegence/redeven-service-templates/template"
 )
 
-const CatalogVersion = "v0.5.2"
+const CatalogVersion = "v0.6.0"
 
 var Locales = []string{
 	"en-US", "zh-CN", "zh-TW", "ja-JP", "ko-KR",
@@ -41,6 +42,9 @@ type ReleaseDiscovery struct {
 }
 
 type TemplateDefinition struct {
+	Kind               string            `json:"kind,omitempty"`
+	DefaultLocale      string            `json:"default_locale,omitempty"`
+	Locales            []string          `json:"locales,omitempty"`
 	SchemaVersion      int               `json:"schema_version"`
 	TemplateID         string            `json:"template_id"`
 	ServiceFamilyID    string            `json:"service_family_id"`
@@ -160,11 +164,18 @@ func GenerateWithVersion(root, catalogVersion string) (Output, error) {
 			return Output{}, fmt.Errorf("unexpected file in templates directory: %s", entry.Name())
 		}
 		dir := filepath.Join(templatesRoot, entry.Name())
-		definitionPath := filepath.Join(dir, "template.json")
+		definitionPath := filepath.Join(dir, "redeven-service-template.json")
 		var definition TemplateDefinition
 		definitionBytes, err := readStrictJSON(definitionPath, &definition)
 		if err != nil {
 			return Output{}, err
+		}
+		files, err := template.ReadDirectory(dir)
+		if err != nil {
+			return Output{}, err
+		}
+		if _, err := template.Read(files); err != nil {
+			return Output{}, fmt.Errorf("validate source %s: %w", dir, err)
 		}
 		if err := validateDefinition(entry.Name(), definition); err != nil {
 			return Output{}, fmt.Errorf("validate %s: %w", definitionPath, err)
@@ -204,7 +215,7 @@ func GenerateWithVersion(root, catalogVersion string) (Output, error) {
 		inputs = append(inputs, inputHash(root, iconPath, iconBytes))
 
 		bundleTemplates = append(bundleTemplates, BundleTemplate{
-			SchemaVersion: definition.SchemaVersion, TemplateID: definition.TemplateID,
+			SchemaVersion: 2, TemplateID: definition.TemplateID,
 			ServiceFamilyID: definition.ServiceFamilyID, RecommendedVersion: definition.RecommendedVersion,
 			Revision: definition.Revision, SortOrder: definition.SortOrder,
 			DeveloperPreview: definition.DeveloperPreview, DiskBytes: definition.DiskBytes,
@@ -276,7 +287,7 @@ func Verify(root string, output Output) error {
 }
 
 func validateDefinition(directory string, definition TemplateDefinition) error {
-	if definition.SchemaVersion != 2 || definition.TemplateID != directory || definition.ServiceFamilyID == "" || definition.RecommendedVersion == "" || definition.Revision < 1 || definition.DiskBytes < 1 {
+	if (definition.SchemaVersion != 2 && definition.SchemaVersion != 3) || definition.TemplateID != directory || definition.ServiceFamilyID == "" || definition.RecommendedVersion == "" || definition.Revision < 1 || definition.DiskBytes < 1 {
 		return errors.New("identity, recommended version, revision, or disk requirement is invalid")
 	}
 	if !validHTTPS(definition.SourceURL) || (definition.DockerSourceURL != "" && !validHTTPS(definition.DockerSourceURL)) {
@@ -437,44 +448,7 @@ func rejectUnexpectedLocales(dir string) error {
 }
 
 func validateSVG(reference IconReference, data []byte) error {
-	if len(data) == 0 || len(data) > 64*1024 || reference.MediaType != "image/svg+xml" {
-		return errors.New("SVG size or media type is invalid")
-	}
-	decoder := xml.NewDecoder(bytes.NewReader(data))
-	rootSeen := false
-	for {
-		token, err := decoder.Token()
-		if errors.Is(err, io.EOF) {
-			break
-		}
-		if err != nil {
-			return fmt.Errorf("parse SVG: %w", err)
-		}
-		element, ok := token.(xml.StartElement)
-		if !ok {
-			continue
-		}
-		if !rootSeen {
-			if element.Name.Local != "svg" {
-				return errors.New("asset root must be svg")
-			}
-			rootSeen = true
-		}
-		if element.Name.Local == "script" || element.Name.Local == "foreignObject" {
-			return fmt.Errorf("unsafe SVG element %q", element.Name.Local)
-		}
-		for _, attribute := range element.Attr {
-			name := strings.ToLower(attribute.Name.Local)
-			value := strings.ToLower(strings.TrimSpace(attribute.Value))
-			if strings.HasPrefix(name, "on") || name == "href" || strings.HasPrefix(value, "javascript:") || strings.HasPrefix(value, "data:") {
-				return fmt.Errorf("unsafe SVG attribute %q", attribute.Name.Local)
-			}
-		}
-	}
-	if !rootSeen {
-		return errors.New("SVG root is missing")
-	}
-	return nil
+	return template.ValidateSVG(template.IconReference{Path: reference.Path, MediaType: reference.MediaType}, data)
 }
 
 func readStrictJSON(path string, target any) ([]byte, error) {
@@ -522,17 +496,8 @@ func HasForbiddenCompatibilityCode(root string) error {
 			return err
 		}
 		relative, _ := filepath.Rel(root, path)
-		if entry.IsDir() && entry.Name() == "compatibility" {
+		if entry.IsDir() && entry.Name() == "compatibility" && strings.HasPrefix(filepath.ToSlash(relative), "templates/") {
 			return fmt.Errorf("forbidden compatibility directory: %s", relative)
-		}
-		if !entry.IsDir() && strings.HasPrefix(filepath.ToSlash(relative), "templates/") {
-			info, err := entry.Info()
-			if err != nil {
-				return err
-			}
-			if info.Mode()&0o111 != 0 {
-				return fmt.Errorf("template input must not be executable: %s", relative)
-			}
 		}
 		return nil
 	})

@@ -1,0 +1,42 @@
+{
+  "schema_version": 2,
+  "template_id": "deepseek-harness-container",
+  "service_family_id": "deepseek-harness-container",
+  "recommended_version": "0.1.1-rc.2",
+  "revision": 3,
+  "sort_order": 20,
+  "developer_preview": true,
+  "disk_bytes": 2147483648,
+  "source_url": "https://github.com/deepseek-ai/deepseek-harness",
+  "docker_source_url": "https://github.com/runzhliu/deepseek-harness-docker",
+  "deployment": "container",
+  "container_mode": "single",
+  "default_access_mode": "desktop_loopback",
+  "platform_artifacts": {
+    "linux-amd64": "ghcr.io/runzhliu/deepseek-harness:0.1.1-rc.2@sha256:7ab8875c68f3ecef18b21b8f04f72d914a4b86df9876064bb5af7d45a9224e9c",
+    "linux-arm64": "ghcr.io/runzhliu/deepseek-harness:0.1.1-rc.2@sha256:53e8a997f09252b139b8e46c0c13eeb574074e6f17a732a4b57135ac5a6bc58a"
+  },
+  "release_discovery": {"source": "oci"},
+  "notices": [
+    {"id": "community-container-image", "revision": 1, "severity": "warning", "acknowledgement_required": false},
+    {"id": "service-api-credentials", "revision": 1, "severity": "info", "acknowledgement_required": false}
+  ],
+  "icon": {"path": "assets/icon.svg", "media_type": "image/svg+xml"},
+  "spec": {
+    "schema_version": 5,
+    "kind": "container",
+    "endpoint": {"scheme": "http", "container_port": 3080, "path": "/", "health_path": "/", "startup_timeout_sec": 45},
+    "container": {
+      "image": "${REDEVEN_CATALOG_ARTIFACT}",
+      "environment": {"DSH_DESKTOP_ENABLED": "0", "DSH_HOME": "/home/node/.dsh", "HOME": "/workspace"},
+      "mounts": [
+        {"resource_id": "data", "type": "volume", "source": "data", "target": "/home/node/.dsh"},
+        {"resource_id": "workspace", "type": "workspace", "target": "/workspace"},
+        {"resource_id": "tmp", "type": "tmpfs", "target": "/tmp"}
+      ],
+      "user": "1000:1000",
+      "read_only_root": true,
+      "pids_limit": 512
+    }
+  }
+}

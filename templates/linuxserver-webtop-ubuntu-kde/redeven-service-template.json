@@ -1,0 +1,90 @@
+{
+  "schema_version": 3,
+  "template_id": "linuxserver-webtop-ubuntu-kde",
+  "service_family_id": "linuxserver-webtop-ubuntu-kde",
+  "recommended_version": "ubuntu-kde-03514d90-ls14",
+  "revision": 4,
+  "sort_order": 30,
+  "developer_preview": false,
+  "disk_bytes": 6442450944,
+  "source_url": "https://github.com/linuxserver/docker-webtop",
+  "deployment": "container",
+  "container_mode": "single",
+  "default_access_mode": "unified_proxy",
+  "platform_artifacts": {
+    "linux-amd64": "lscr.io/linuxserver/webtop:ubuntu-kde-03514d90-ls14@sha256:84b31987ce1cb487ec44de3c5a1b4ae0398e72e8fe9a25fec62c119aa9f3bdbb",
+    "linux-arm64": "lscr.io/linuxserver/webtop:ubuntu-kde-03514d90-ls14@sha256:724571c759ced711feebcb2dfe03ce9be8f7431051fc12c3cb0cf4aea66446c3"
+  },
+  "release_discovery": {
+    "source": "oci"
+  },
+  "notices": [
+    {
+      "id": "interactive-desktop-root-and-network",
+      "revision": 1,
+      "severity": "warning",
+      "acknowledgement_required": true
+    }
+  ],
+  "icon": {
+    "path": "assets/icon.svg",
+    "media_type": "image/svg+xml"
+  },
+  "spec": {
+    "schema_version": 6,
+    "kind": "container",
+    "endpoint": {
+      "scheme": "http",
+      "container_port": 3000,
+      "path": "/",
+      "health_path": "/",
+      "startup_timeout_sec": 180
+    },
+    "container": {
+      "image": "${REDEVEN_CATALOG_ARTIFACT}",
+      "environment": {
+        "PUID": "${REDEVEN_RUNTIME_UID}",
+        "PGID": "${REDEVEN_RUNTIME_GID}",
+        "TZ": "${REDEVEN_RUNTIME_TIMEZONE}",
+        "TITLE": "Ubuntu KDE",
+        "START_DOCKER": "false",
+        "FILE_MANAGER_PATH": "/workspace",
+        "SELKIES_USE_CPU": "true|locked",
+        "SELKIES_ENABLE_SHARING": "false|locked",
+        "SELKIES_ENABLE_COLLAB": "false|locked",
+        "SELKIES_ENABLE_SHARED": "false|locked",
+        "SELKIES_UI_SIDEBAR_SHOW_SHARING": "false|locked"
+      },
+      "mounts": [
+        {
+          "resource_id": "config",
+          "type": "volume",
+          "source": "config",
+          "target": "/config"
+        },
+        {
+          "resource_id": "workspace",
+          "type": "workspace",
+          "target": "/workspace"
+        }
+      ],
+      "read_only_root": false,
+      "pids_limit": 2048,
+      "runtime_profile": "interactive_desktop"
+    }
+  },
+  "kind": "redeven.service-template",
+  "default_locale": "en-US",
+  "locales": [
+    "en-US",
+    "zh-CN",
+    "zh-TW",
+    "ja-JP",
+    "ko-KR",
+    "de-DE",
+    "fr-FR",
+    "es-ES",
+    "pt-BR",
+    "ru-RU"
+  ]
+}

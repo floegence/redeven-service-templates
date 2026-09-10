@@ -1,0 +1,1 @@
+{"name":"LinuxServer Webtop · Ubuntu（KDE Plasma）","description":"在隔离容器中运行基于 Ubuntu 的 KDE Plasma 桌面，外观与标准 Ubuntu Desktop（GNOME）不同。","notices":{"interactive-desktop-root-and-network":{"title":"容器 root 权限与出站网络","description":"任何能打开此桌面的用户都可以在容器内取得 root 权限。容器也可以连接外部网络。请仅向可信用户开放此服务。"}}}

@@ -1,0 +1,364 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "compose": {
+      "additionalProperties": false,
+      "properties": {
+        "main_service": {
+          "type": "string"
+        },
+        "yaml": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "yaml",
+        "main_service"
+      ],
+      "type": "object"
+    },
+    "container": {
+      "additionalProperties": false,
+      "properties": {
+        "cap_add": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "cap_drop": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "command": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "cpus": {
+          "type": "number"
+        },
+        "devices": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "container_path": {
+                "type": "string"
+              },
+              "host_path": {
+                "type": "string"
+              },
+              "permissions": {
+                "type": "string"
+              },
+              "resource_id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "host_path"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "entrypoint": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "environment": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "image": {
+          "type": "string"
+        },
+        "ipc_mode": {
+          "type": "string"
+        },
+        "labels": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "memory_bytes": {
+          "type": "integer"
+        },
+        "mounts": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "read_only": {
+                "type": "boolean"
+              },
+              "resource_id": {
+                "type": "string"
+              },
+              "source": {
+                "type": "string"
+              },
+              "target": {
+                "type": "string"
+              },
+              "tmpfs_options": {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "type": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "target"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "network_mode": {
+          "type": "string"
+        },
+        "pid_mode": {
+          "type": "string"
+        },
+        "pids_limit": {
+          "type": "integer"
+        },
+        "ports": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "container_port": {
+                "type": "integer"
+              },
+              "host_ip": {
+                "type": "string"
+              },
+              "host_port": {
+                "type": "integer"
+              },
+              "protocol": {
+                "type": "string"
+              },
+              "resource_id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "container_port"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "privileged": {
+          "type": "boolean"
+        },
+        "read_only_root": {
+          "type": "boolean"
+        },
+        "restart_policy": {
+          "type": "string"
+        },
+        "runtime_profile": {
+          "type": "string"
+        },
+        "security_opts": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "shm_size_bytes": {
+          "type": "integer"
+        },
+        "user": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "image",
+        "read_only_root"
+      ],
+      "type": "object"
+    },
+    "endpoint": {
+      "additionalProperties": false,
+      "properties": {
+        "container_port": {
+          "type": "integer"
+        },
+        "fixed_host_port": {
+          "type": "integer"
+        },
+        "health_path": {
+          "type": "string"
+        },
+        "health_protocol": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "scheme": {
+          "type": "string"
+        },
+        "startup_timeout_sec": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "scheme"
+      ],
+      "type": "object"
+    },
+    "host": {
+      "additionalProperties": false,
+      "properties": {
+        "after_start_script": {
+          "type": "string"
+        },
+        "artifact": {
+          "additionalProperties": false,
+          "properties": {
+            "download_url": {
+              "type": "string"
+            },
+            "executable_rel_path": {
+              "type": "string"
+            },
+            "sha256": {
+              "type": "string"
+            },
+            "size_bytes": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "download_url",
+            "size_bytes",
+            "sha256",
+            "executable_rel_path"
+          ],
+          "type": "object"
+        },
+        "environment": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "install_script": {
+          "type": "string"
+        },
+        "npm": {
+          "additionalProperties": false,
+          "properties": {
+            "auth_token_parameter": {
+              "type": "string"
+            },
+            "executable": {
+              "type": "string"
+            },
+            "package_name": {
+              "type": "string"
+            },
+            "registry_url": {
+              "type": "string"
+            },
+            "version": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "package_name",
+            "version",
+            "registry_url",
+            "executable"
+          ],
+          "type": "object"
+        },
+        "open_script": {
+          "type": "string"
+        },
+        "output_mode": {
+          "type": "string"
+        },
+        "start_script": {
+          "type": "string"
+        },
+        "stop_script": {
+          "type": "string"
+        },
+        "uninstall_script": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "start_script"
+      ],
+      "type": "object"
+    },
+    "kind": {
+      "enum": [
+        "host",
+        "container",
+        "compose"
+      ]
+    },
+    "parameters": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "default": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "label",
+          "type"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "schema_version": {
+      "const": 6
+    }
+  },
+  "required": [
+    "schema_version",
+    "kind",
+    "endpoint"
+  ],
+  "title": "Redeven Service Template execution specification",
+  "type": "object"
+}

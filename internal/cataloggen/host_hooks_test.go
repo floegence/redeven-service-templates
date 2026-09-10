@@ -11,7 +11,7 @@ import (
 )
 
 func TestPublishedHostHooksCaptureAndReusePrivateOpeningInformation(t *testing.T) {
-	raw, err := os.ReadFile("../../templates/deepseek-harness-host/template.json")
+	raw, err := os.ReadFile("../../templates/deepseek-harness-host/redeven-service-template.json")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -20,6 +20,9 @@ if git show-ref --verify --quiet "refs/tags/$version"; then
   echo "catalog tag already exists locally: $version" >&2
   exit 1
 fi
+candidate_worktree="$(git worktree list --porcelain | awk -v target="refs/heads/$branch" '/^worktree / { path=substr($0,10) } /^branch / && $2==target { print path }')"
+test -n "$candidate_worktree"
+( cd "$candidate_worktree"; test -z "$(git status --porcelain)"; bash scripts/check_contracts.sh )
 git merge --ff-only "$branch"
 git tag -a "$version" -m "Release service template catalog $version"
 git push --atomic origin main "refs/tags/$version"

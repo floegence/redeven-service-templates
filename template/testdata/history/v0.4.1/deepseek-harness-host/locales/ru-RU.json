@@ -1,0 +1,1 @@
+{"name":"DeepSeek Harness","description":"Запускайте DeepSeek Harness непосредственно в текущем окружении.","notices":{"service-api-credentials":{"title":"Храните учётные данные API только внутри сервиса","description":"Настройте ключи API внутри DeepSeek Harness после открытия. Redeven не получает, не копирует и не записывает эти ключи."}}}

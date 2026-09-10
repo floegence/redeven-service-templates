@@ -235,7 +235,7 @@ func currentPlan(t *testing.T, root string) ReleasePlan {
 	}
 	plan := ReleasePlan{}
 	for _, source := range config.Sources {
-		data, err := os.ReadFile(filepath.Join(root, "templates", source.TemplateID, "template.json"))
+		data, err := os.ReadFile(filepath.Join(root, "templates", source.TemplateID, "redeven-service-template.json"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -300,13 +300,13 @@ func TestApplyOnlyChangesAffectedRevisionAndIsDeterministic(t *testing.T) {
 	expectedVersion := fmt.Sprintf("%s.%s.%d", initialParts[0], initialParts[1], initialPatch+1)
 	plan := currentPlan(t, root)
 	plan.Releases[0].Version = "9.0.0"
-	hostPath := filepath.Join(root, "templates", plan.Releases[0].Source.TemplateID, "template.json")
+	hostPath := filepath.Join(root, "templates", plan.Releases[0].Source.TemplateID, "redeven-service-template.json")
 	initialData, _ := os.ReadFile(hostPath)
 	var initialHost cataloggen.TemplateDefinition
 	if err := decodeJSON(initialData, &initialHost); err != nil {
 		t.Fatal(err)
 	}
-	containerPath := filepath.Join(root, "templates", plan.Releases[1].Source.TemplateID, "template.json")
+	containerPath := filepath.Join(root, "templates", plan.Releases[1].Source.TemplateID, "redeven-service-template.json")
 	beforeContainer, _ := os.ReadFile(containerPath)
 	before := snapshot(t, root)
 	changed, err := apply(t.Context(), root, plan, localValidation)
@@ -317,7 +317,7 @@ func TestApplyOnlyChangesAffectedRevisionAndIsDeterministic(t *testing.T) {
 	if string(beforeContainer) != string(afterContainer) {
 		t.Fatal("unrelated container revision changed")
 	}
-	data, _ := os.ReadFile(filepath.Join(root, "templates", plan.Releases[0].Source.TemplateID, "template.json"))
+	data, _ := os.ReadFile(filepath.Join(root, "templates", plan.Releases[0].Source.TemplateID, "redeven-service-template.json"))
 	var host cataloggen.TemplateDefinition
 	if err := decodeJSON(data, &host); err != nil {
 		t.Fatal(err)

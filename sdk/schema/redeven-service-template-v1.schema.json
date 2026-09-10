@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "container_mode": {
+      "type": "string"
+    },
+    "default_access_mode": {
+      "type": "string"
+    },
+    "deployment": {
+      "type": "string"
+    },
+    "developer_preview": {
+      "type": "boolean"
+    },
+    "disk_bytes": {
+      "type": "integer"
+    },
+    "docker_source_url": {
+      "type": "string"
+    },
+    "icon": {
+      "additionalProperties": false,
+      "properties": {
+        "media_type": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "media_type"
+      ],
+      "type": "object"
+    },
+    "notices": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "acknowledgement_required": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "revision": {
+            "type": "integer"
+          },
+          "severity": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "revision",
+          "severity",
+          "acknowledgement_required"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "platform_artifacts": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "release_discovery": {
+      "additionalProperties": false,
+      "properties": {
+        "allow_non_semver": {
+          "type": "boolean"
+        },
+        "allow_prerelease": {
+          "type": "boolean"
+        },
+        "source": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "source"
+      ],
+      "type": "object"
+    },
+    "revision": {
+      "type": "integer"
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "service_family_id": {
+      "type": "string"
+    },
+    "sort_order": {
+      "type": "integer"
+    },
+    "source_url": {
+      "type": "string"
+    },
+    "spec": {
+      "oneOf": [
+        {
+          "$ref": "redeven-service-template-spec-v3.schema.json"
+        }
+      ]
+    },
+    "supported_platforms": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "template_id": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "template_id",
+    "service_family_id",
+    "revision",
+    "spec"
+  ],
+  "title": "Redeven Service Template document",
+  "type": "object"
+}

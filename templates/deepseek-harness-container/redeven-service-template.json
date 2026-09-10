@@ -1,0 +1,94 @@
+{
+  "schema_version": 3,
+  "template_id": "deepseek-harness-container",
+  "service_family_id": "deepseek-harness-container",
+  "recommended_version": "0.1.5-alpha.2-r1-ungoogled.1",
+  "revision": 8,
+  "sort_order": 20,
+  "developer_preview": true,
+  "disk_bytes": 2147483648,
+  "source_url": "https://github.com/deepseek-ai/deepseek-harness",
+  "docker_source_url": "https://github.com/runzhliu/deepseek-harness-docker",
+  "deployment": "container",
+  "container_mode": "single",
+  "default_access_mode": "desktop_loopback",
+  "platform_artifacts": {
+    "linux-amd64": "ghcr.io/runzhliu/deepseek-harness:0.1.5-alpha.2-r1-ungoogled.1@sha256:221d16d4f4cdad69d967e060f551078d14574a6ce156f34e69959da95e294a48",
+    "linux-arm64": "ghcr.io/runzhliu/deepseek-harness:0.1.5-alpha.2-r1-ungoogled.1@sha256:82127dbf1f6f241eb2502dae99415d0e3ad1b55488f86b2a4dd864a08aec154a"
+  },
+  "release_discovery": {
+    "source": "oci"
+  },
+  "notices": [
+    {
+      "id": "community-container-image",
+      "revision": 1,
+      "severity": "warning",
+      "acknowledgement_required": false
+    },
+    {
+      "id": "service-api-credentials",
+      "revision": 1,
+      "severity": "info",
+      "acknowledgement_required": false
+    }
+  ],
+  "icon": {
+    "path": "assets/icon.svg",
+    "media_type": "image/svg+xml"
+  },
+  "spec": {
+    "schema_version": 6,
+    "kind": "container",
+    "endpoint": {
+      "scheme": "http",
+      "container_port": 3080,
+      "path": "/",
+      "health_path": "/",
+      "startup_timeout_sec": 45
+    },
+    "container": {
+      "image": "${REDEVEN_CATALOG_ARTIFACT}",
+      "environment": {
+        "DSH_DESKTOP_ENABLED": "0",
+        "DSH_HOME": "/home/node/.dsh",
+        "HOME": "/workspace"
+      },
+      "mounts": [
+        {
+          "resource_id": "data",
+          "type": "volume",
+          "source": "data",
+          "target": "/home/node/.dsh"
+        },
+        {
+          "resource_id": "workspace",
+          "type": "workspace",
+          "target": "/workspace"
+        },
+        {
+          "resource_id": "tmp",
+          "type": "tmpfs",
+          "target": "/tmp"
+        }
+      ],
+      "user": "1000:1000",
+      "read_only_root": true,
+      "pids_limit": 512
+    }
+  },
+  "kind": "redeven.service-template",
+  "default_locale": "en-US",
+  "locales": [
+    "en-US",
+    "zh-CN",
+    "zh-TW",
+    "ja-JP",
+    "ko-KR",
+    "de-DE",
+    "fr-FR",
+    "es-ES",
+    "pt-BR",
+    "ru-RU"
+  ]
+}

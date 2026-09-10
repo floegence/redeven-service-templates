@@ -1,0 +1,1 @@
+{"name":"DeepSeek Harness","description":"直接在目前環境中執行 DeepSeek Harness。","notices":{"service-api-credentials":{"title":"僅在服務內保存 API 憑證","description":"開啟 DeepSeek Harness 後，請在其內部設定 API Key。Redeven 不會接收、複製或記錄這些金鑰。"}}}

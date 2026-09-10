@@ -42,7 +42,7 @@ func apply(ctx context.Context, root string, plan ReleasePlan, validate validati
 		if !reflect.DeepEqual(source, release.Source) || !validVersion(release.Version) {
 			return false, errors.New("release plan source mismatch")
 		}
-		relative := "templates/" + source.TemplateID + "/template.json"
+		relative := "templates/" + source.TemplateID + "/redeven-service-template.json"
 		data, err := os.ReadFile(filepath.Join(root, relative))
 		if err != nil {
 			return false, err

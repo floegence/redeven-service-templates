@@ -1,0 +1,4 @@
+{
+  "name": "Example web service",
+  "description": "Run an existing example-server executable using the assigned service port."
+}

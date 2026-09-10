@@ -1,0 +1,20 @@
+{
+  "files": [
+    {
+      "path": "a.sh",
+      "mode": "100755",
+      "content": "IyEvYmluL3NoCmVjaG8gc291cmNlCg=="
+    },
+    {
+      "path": ".json",
+      "mode": "100644",
+      "content": "e30K"
+    },
+    {
+      "path": "𐀀.json",
+      "mode": "100644",
+      "content": "W10K"
+    }
+  ],
+  "sha256": "c0943a734e95aa2353f0e309cb279aacb08ec9ebb65394bfb31d61c097676eec"
+}

@@ -176,7 +176,7 @@ func writeTemplate(t *testing.T, templateID, tag, amd64, arm64 string) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "template.json"), data, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "redeven-service-template.json"), data, 0o644); err != nil {
 		t.Fatal(err)
 	}
 	return root

@@ -1,0 +1,1 @@
+{"name":"DeepSeek Harness","description":"Run DeepSeek Harness directly in the current Environment.","notices":{"service-api-credentials":{"title":"Keep API credentials inside the service","description":"Configure API keys inside DeepSeek Harness after it opens. Redeven does not receive, copy, or log those keys."}}}

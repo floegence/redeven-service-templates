@@ -1,0 +1,21 @@
+{
+  "kind": "redeven.service-template",
+  "schema_version": 3,
+  "template_id": "example-web",
+  "service_family_id": "example-web",
+  "revision": 1,
+  "default_locale": "en-US",
+  "locales": [
+    "en-US"
+  ],
+  "spec": {
+    "schema_version": 6,
+    "kind": "host",
+    "endpoint": {
+      "scheme": "http"
+    },
+    "host": {
+      "start_script": "exec /bin/sh \"$REDEVEN_TEMPLATE_DIR/scripts/start.sh\""
+    }
+  }
+}

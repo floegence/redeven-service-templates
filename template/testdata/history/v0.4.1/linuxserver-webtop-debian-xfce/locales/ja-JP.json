@@ -1,0 +1,1 @@
+{"name":"LinuxServer Webtop · Debian XFCE","description":"永続化された Debian XFCE デスクトップを分離コンテナ内で実行します。","notices":{"interactive-desktop-root-and-network":{"title":"コンテナの root 権限と外部ネットワーク","description":"このデスクトップを開けるユーザーは、コンテナ内で root 権限を取得できます。コンテナは外部ネットワークにも接続できます。信頼できるユーザーとのみ共有してください。"}}}

@@ -1,0 +1,30 @@
+{
+  "schema_version": 2,
+  "template_id": "deepseek-harness-host",
+  "service_family_id": "deepseek-harness-host",
+  "recommended_version": "0.1.1-rc.2",
+  "revision": 6,
+  "sort_order": 10,
+  "developer_preview": true,
+  "disk_bytes": 2147483648,
+  "source_url": "https://github.com/deepseek-ai/deepseek-harness",
+  "deployment": "host",
+  "default_access_mode": "desktop_loopback",
+  "supported_platforms": ["darwin-amd64", "darwin-arm64", "linux-amd64", "linux-arm64"],
+  "release_discovery": {"source": "npm"},
+  "notices": [
+    {"id": "service-api-credentials", "revision": 1, "severity": "info", "acknowledgement_required": false}
+  ],
+  "icon": {"path": "assets/icon.svg", "media_type": "image/svg+xml"},
+  "spec": {
+    "schema_version": 5,
+    "kind": "host",
+    "endpoint": {"scheme": "http", "path": "/", "health_path": "/", "startup_timeout_sec": 45},
+    "host": {
+      "open_target": {"mode": "startup_output_url", "line_prefix": "dsh web: "},
+      "start_script": "exec \"$REDEVEN_INSTALL_EXECUTABLE\" web --host \"$REDEVEN_SERVICE_HOST\" --port \"$REDEVEN_SERVICE_PORT\" --no-open",
+      "environment": {"DSH_DESKTOP_ENABLED": "0", "DSH_HOME": "${REDEVEN_SERVICE_DATA_DIR}", "HOME": "${REDEVEN_WORKSPACE}"},
+      "npm": {"package_name": "@deepseek-ai/dsh", "version": "0.1.1-rc.2", "registry_url": "https://registry.npmjs.org/", "executable": "dsh"}
+    }
+  }
+}

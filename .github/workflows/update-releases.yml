@@ -30,6 +30,11 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 26
+
       - name: Create isolated update worktree
         id: worktree
         shell: bash
@@ -50,6 +55,12 @@ jobs:
       - name: Discover, generate, preflight and test staged releases
         working-directory: ${{ steps.worktree.outputs.path }}
         run: go run ./cmd/release-watcher
+
+      - name: Verify public contracts and Desktop acquisition
+        working-directory: ${{ steps.worktree.outputs.path }}
+        run: |
+          go run ./cmd/generate-contracts --verify
+          node --test sdk/*.test.cjs
 
       - name: Commit the verified candidate
         id: commit

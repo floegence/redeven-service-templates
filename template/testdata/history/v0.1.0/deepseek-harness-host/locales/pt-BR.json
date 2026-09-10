@@ -1,0 +1,1 @@
+{"name":"DeepSeek Harness","description":"Execute o DeepSeek Harness diretamente no ambiente atual.","notices":{"service-api-credentials":{"title":"Mantenha as credenciais de API dentro do serviço","description":"Configure as chaves de API dentro do DeepSeek Harness depois de abri-lo. O Redeven não recebe, copia nem registra essas chaves."}}}

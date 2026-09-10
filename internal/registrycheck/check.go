@@ -107,7 +107,7 @@ func Check(ctx context.Context, root string, options Options) error {
 		if !entry.IsDir() {
 			continue
 		}
-		path := filepath.Join(root, "templates", entry.Name(), "template.json")
+		path := filepath.Join(root, "templates", entry.Name(), "redeven-service-template.json")
 		data, readErr := os.ReadFile(path)
 		if readErr != nil {
 			return fmt.Errorf("read %s: %w", path, readErr)
@@ -152,7 +152,7 @@ func decodeJSON(data []byte, target any) error {
 }
 
 func (c checkContext) checkTemplate(ctx context.Context, definition templateDefinition) error {
-	if definition.SchemaVersion != 2 || definition.TemplateID == "" || definition.RecommendedVersion == "" || definition.Deployment != "container" {
+	if (definition.SchemaVersion != 2 && definition.SchemaVersion != 3) || definition.TemplateID == "" || definition.RecommendedVersion == "" || definition.Deployment != "container" {
 		return c.invalid(definition.TemplateID, "template identity or deployment is invalid")
 	}
 	if len(definition.PlatformArtifacts) == 0 {

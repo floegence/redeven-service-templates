@@ -1,0 +1,39 @@
+{
+  "schema_version": 2,
+  "template_id": "deepseek-harness-container",
+  "service_family_id": "deepseek-harness-container",
+  "recommended_version": "0.1.3-alpha.2-r1-ungoogled.1",
+  "revision": 6,
+  "sort_order": 20,
+  "developer_preview": true,
+  "disk_bytes": 2147483648,
+  "source_url": "https://github.com/deepseek-ai/deepseek-harness",
+  "docker_source_url": "https://github.com/runzhliu/deepseek-harness-docker",
+  "deployment": "container",
+  "container_mode": "single",
+  "default_access_mode": "desktop_loopback",
+  "platform_artifacts": {"linux-amd64":"ghcr.io/runzhliu/deepseek-harness:0.1.3-alpha.2-r1-ungoogled.1@sha256:c2c8aa77820857d9d95b8008c6033d6577963a1c00443166b7f040288fcefffb","linux-arm64":"ghcr.io/runzhliu/deepseek-harness:0.1.3-alpha.2-r1-ungoogled.1@sha256:b376729b109e406b0914cee1b1c44552459450ac9f049a3103af05c83ae28dae"},
+  "release_discovery": {"source": "oci"},
+  "notices": [
+    {"id": "community-container-image", "revision": 1, "severity": "warning", "acknowledgement_required": false},
+    {"id": "service-api-credentials", "revision": 1, "severity": "info", "acknowledgement_required": false}
+  ],
+  "icon": {"path": "assets/icon.svg", "media_type": "image/svg+xml"},
+  "spec": {
+    "schema_version": 6,
+    "kind": "container",
+    "endpoint": {"scheme": "http", "container_port": 3080, "path": "/", "health_path": "/", "startup_timeout_sec": 45},
+    "container": {
+      "image": "${REDEVEN_CATALOG_ARTIFACT}",
+      "environment": {"DSH_DESKTOP_ENABLED": "0", "DSH_HOME": "/home/node/.dsh", "HOME": "/workspace"},
+      "mounts": [
+        {"resource_id": "data", "type": "volume", "source": "data", "target": "/home/node/.dsh"},
+        {"resource_id": "workspace", "type": "workspace", "target": "/workspace"},
+        {"resource_id": "tmp", "type": "tmpfs", "target": "/tmp"}
+      ],
+      "user": "1000:1000",
+      "read_only_root": true,
+      "pids_limit": 512
+    }
+  }
+}

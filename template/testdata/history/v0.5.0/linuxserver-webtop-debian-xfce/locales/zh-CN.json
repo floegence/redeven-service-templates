@@ -1,0 +1,1 @@
+{"name":"LinuxServer Webtop · Debian XFCE","description":"在隔离容器中运行可持久化的 Debian XFCE 桌面。","notices":{"interactive-desktop-root-and-network":{"title":"容器 root 权限与出站网络","description":"任何能打开此桌面的用户都可以在容器内取得 root 权限。容器也可以连接外部网络。请仅向可信用户开放此服务。"}}}

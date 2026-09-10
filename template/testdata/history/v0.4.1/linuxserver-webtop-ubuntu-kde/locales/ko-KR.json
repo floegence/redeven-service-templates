@@ -1,0 +1,1 @@
+{"name":"LinuxServer Webtop · Ubuntu (KDE Plasma 데스크톱)","description":"Ubuntu 기반 KDE Plasma 데스크톱을 격리된 컨테이너에서 실행합니다. 일반 Ubuntu Desktop(GNOME)과 모양이 다릅니다.","notices":{"interactive-desktop-root-and-network":{"title":"컨테이너 root 권한 및 외부 네트워크","description":"이 데스크톱을 열 수 있는 사용자는 컨테이너 안에서 root 권한을 얻을 수 있습니다. 컨테이너는 외부 네트워크에도 연결할 수 있습니다. 신뢰할 수 있는 사용자에게만 공유하세요."}}}

@@ -2,6 +2,12 @@
 
 This repository packages declarative metadata and reviewed visual assets for third-party services. Each service remains governed by its upstream project and license.
 
+## Go YAML
+
+- Module: `gopkg.in/yaml.v3` v3.0.1
+- Project: [go-yaml/yaml](https://github.com/go-yaml/yaml)
+- License: MIT and Apache-2.0. Used to validate declarative Compose input.
+
 ## DeepSeek Harness
 
 - Project: [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness)
