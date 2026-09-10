@@ -17,7 +17,7 @@ import (
 	"strings"
 )
 
-const CatalogVersion = "v0.5.1"
+const CatalogVersion = "v0.5.2"
 
 var Locales = []string{
 	"en-US", "zh-CN", "zh-TW", "ja-JP", "ko-KR",
