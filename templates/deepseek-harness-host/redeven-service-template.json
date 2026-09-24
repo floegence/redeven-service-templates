@@ -2,8 +2,8 @@
   "schema_version": 3,
   "template_id": "deepseek-harness-host",
   "service_family_id": "deepseek-harness-host",
-  "recommended_version": "0.1.5-rc.2",
-  "revision": 10,
+  "recommended_version": "0.1.5-rc.3",
+  "revision": 11,
   "sort_order": 10,
   "developer_preview": true,
   "disk_bytes": 2147483648,
@@ -52,7 +52,7 @@
       },
       "npm": {
         "package_name": "@deepseek-ai/dsh",
-        "version": "0.1.5-rc.2",
+        "version": "0.1.5-rc.3",
         "registry_url": "https://registry.npmjs.org/",
         "executable": "dsh"
       }
