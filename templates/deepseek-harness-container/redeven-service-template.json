@@ -2,8 +2,8 @@
   "schema_version": 3,
   "template_id": "deepseek-harness-container",
   "service_family_id": "deepseek-harness-container",
-  "recommended_version": "0.1.7-rc.1-r1-ungoogled.1",
-  "revision": 13,
+  "recommended_version": "0.1.7-rc.2-r1-ungoogled.1",
+  "revision": 14,
   "sort_order": 20,
   "developer_preview": true,
   "disk_bytes": 2147483648,
@@ -12,7 +12,7 @@
   "deployment": "container",
   "container_mode": "single",
   "default_access_mode": "desktop_loopback",
-  "platform_artifacts": {"linux-amd64":"ghcr.io/runzhliu/deepseek-harness:0.1.7-rc.1-r1-ungoogled.1@sha256:d57f24a62fbf54c760f09bd65c2e1c4df84b1ad75ed5ada3d79e2825adaad26b","linux-arm64":"ghcr.io/runzhliu/deepseek-harness:0.1.7-rc.1-r1-ungoogled.1@sha256:b9a784571f3f19b2f668561d3851777102d6f7d4a7f1d363e3081a0e1f78be04"},
+  "platform_artifacts": {"linux-amd64":"ghcr.io/runzhliu/deepseek-harness:0.1.7-rc.2-r1-ungoogled.1@sha256:8dd3a15d03a976d96f0b267f39cba7d402cf8dbf09efb752f98f1a5980c76b22","linux-arm64":"ghcr.io/runzhliu/deepseek-harness:0.1.7-rc.2-r1-ungoogled.1@sha256:66d6045a1dd4fc4e3feecfeb512061aa184992f77fb01a87d5606fd2a0d4e740"},
   "release_discovery": {
     "source": "oci"
   },
