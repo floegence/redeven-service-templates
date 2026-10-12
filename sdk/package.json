@@ -1,6 +1,6 @@
 {
   "name": "@floegence/redeven-service-templates",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Published Redeven Service Template contracts and GitHub source acquisition",
   "type": "commonjs",
   "main": "index.cjs",

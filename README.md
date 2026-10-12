@@ -14,14 +14,14 @@ helper scripts. Start with `examples/minimal-host/`.
 ```json
 {
   "kind": "redeven.service-template",
-  "schema_version": 3,
+  "schema_version": 4,
   "template_id": "example-web",
   "service_family_id": "example-web",
   "revision": 1,
   "default_locale": "en-US",
   "locales": ["en-US"],
   "spec": {
-    "schema_version": 6,
+    "schema_version": 7,
     "kind": "host",
     "endpoint": {"scheme": "http"},
     "host": {"start_script": "exec example-server --port \"$REDEVEN_SERVICE_PORT\""}
@@ -46,7 +46,7 @@ A `recommended_version` is an installation default, never automatic tracking.
 ## Validate and consume
 
 ```sh
-go run github.com/floegence/redeven-service-templates/cmd/validate-template@v0.6.0 --current ./my-template
+go run github.com/floegence/redeven-service-templates/cmd/validate-template@v0.7.0 --current ./my-template
 ```
 
 Without `--current`, the validator also accepts supported historical sources.
@@ -66,9 +66,10 @@ lockfile; never wire sibling source repositories into product builds.
 
 | Original entrypoint | Document | Execution input | Effective versions |
 | --- | --- | --- | --- |
-| `template.json` | 1 | 3 | document 3 / execution 6 |
-| `template.json` | 2 | 4–6 | document 3 / execution 6 |
-| `redeven-service-template.json` | 3 | 6 | document 3 / execution 6 |
+| `template.json` | 1 | 3 | document 4 / execution 7 |
+| `template.json` | 2 | 4–6 | document 4 / execution 7 |
+| `redeven-service-template.json` | 3 | 6 | document 4 / execution 7 |
+| `redeven-service-template.json` | 4 | 7 | document 4 / execution 7 |
 
 Historical readers strictly identify the original structure before applying
 contiguous, deterministic data adapters. Document 1's release default becomes
@@ -92,6 +93,23 @@ Frozen released input bytes and their checksums under `template/testdata/history
 remain in the release gate. New formats retain old schemas/readers and add
 explicit adaptation steps and behavioral tests. Pure data adapters belong here;
 service execution and database lineage migration do not.
+
+## Opening source contract
+
+Execution 7 declares exactly one opening source: a fixed `endpoint.path`
+(default `/`), a Host `open_script`, or `startup_url: {"line_prefix": "dsh web: "}`.
+A dynamic source cannot declare a fixed path. Container and Compose sources are
+read-only output declarations and never grant host script execution. Host
+startup-output sources require `private_file` output without an after-start hook.
+
+`ParseStartupURL` extracts the first whitespace-delimited complete HTTP(S) URL
+after an exact line prefix, ignoring trailing LAN descriptions. It accepts only
+one verified launch's output, bounded to 16 MiB and 64 KiB per line. The host
+verifies scheme, loopback address, port, resource ownership, and launch generation
+before saving private path/query data. Missing logs require an explicit restart;
+entry preparation never restarts or upgrades an application. Errors contain no
+output, URLs, or tokens. Source compatibility adaptation never changes runtime
+configuration or applied instance identity.
 
 ## GitHub source contract
 
@@ -136,7 +154,7 @@ node --test sdk/*.test.cjs
 ```
 
 The official compiled catalog retains its existing bundle schema 2 for existing
-consumers; source document 3 is independently versioned. Generation validates
+consumers; source document 4 is independently versioned. Generation validates
 sources through the public reader and adds official catalog policy. The OCI
 preflight verifies each exact recommendation and architecture digest against its
 registry before publication. Generated outputs are deterministic and committed.

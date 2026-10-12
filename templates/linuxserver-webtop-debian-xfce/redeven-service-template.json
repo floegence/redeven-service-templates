@@ -1,9 +1,9 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "template_id": "linuxserver-webtop-debian-xfce",
   "service_family_id": "linuxserver-webtop-debian-xfce",
   "recommended_version": "debian-xfce-5945573f-ls91",
-  "revision": 4,
+  "revision": 5,
   "sort_order": 40,
   "developer_preview": false,
   "disk_bytes": 6442450944,
@@ -31,7 +31,7 @@
     "media_type": "image/svg+xml"
   },
   "spec": {
-    "schema_version": 6,
+    "schema_version": 7,
     "kind": "container",
     "endpoint": {
       "scheme": "http",

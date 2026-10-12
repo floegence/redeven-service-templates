@@ -113,8 +113,13 @@ type ComposeTemplateSpec struct {
 	MainService string `json:"main_service"`
 }
 
+type StartupURLSpec struct {
+	LinePrefix string `json:"line_prefix"`
+}
+
 type Spec struct {
 	SchemaVersion int                    `json:"schema_version"`
+	StartupURL    *StartupURLSpec        `json:"startup_url,omitempty"`
 	Kind          Deployment             `json:"kind"`
 	Endpoint      WebEndpointSpec        `json:"endpoint"`
 	Parameters    []TemplateParameter    `json:"parameters,omitempty"`

@@ -24,6 +24,9 @@ func ValidateSpec(spec Spec) error {
 	if spec.SchemaVersion != SpecVersion {
 		return serviceError("TEMPLATE_SCHEMA_UNSUPPORTED", "The template schema version is not supported.", 400, false, nil)
 	}
+	if err := validateOpeningSource(spec); err != nil {
+		return err
+	}
 	if spec.Endpoint.Scheme != "http" && spec.Endpoint.Scheme != "https" {
 		return serviceError("TEMPLATE_ENDPOINT_INVALID", "Template endpoint scheme must be http or https.", 400, false, nil)
 	}

@@ -334,5 +334,17 @@
   "v0.5.0/linuxserver-webtop-ubuntu-kde/locales/ru-RU.json": "e2764998122203108424248367d952612a571128bfee273153281a6bc9b2813e",
   "v0.5.0/linuxserver-webtop-ubuntu-kde/locales/zh-CN.json": "6d5e7a8a0521802d34709691bd979601babc706fe69a04ee9192672a88e703b0",
   "v0.5.0/linuxserver-webtop-ubuntu-kde/locales/zh-TW.json": "f872c3b2af762121ff33398e5ccd35ce00ff200f5492d72e6122691ee294f5e3",
-  "v0.5.0/linuxserver-webtop-ubuntu-kde/template.json": "7281c5733800b44cd25cc38948c21403c39c8a2e8663d40f9fe15aeada52069b"
+  "v0.5.0/linuxserver-webtop-ubuntu-kde/template.json": "7281c5733800b44cd25cc38948c21403c39c8a2e8663d40f9fe15aeada52069b",
+  "v0.6.11/deepseek-harness-container/assets/icon.svg": "abf3d9fc81f5bf293b3e193de8a5ea221a9d1ecefa45355562f62f549d0a1c02",
+  "v0.6.11/deepseek-harness-container/locales/de-DE.json": "bc9329f8f2fe7a2a4122db108848e6f2968c17f74f386623fa9f8103dcd94f29",
+  "v0.6.11/deepseek-harness-container/locales/en-US.json": "3ec033fe675d8860357f8e914888ab43f11f8e28be24fdc1b02a22e21a2a2a0f",
+  "v0.6.11/deepseek-harness-container/locales/es-ES.json": "e0fec079fc4346239518d7a8925f376d7c0656f9435f93b5494333900ae49641",
+  "v0.6.11/deepseek-harness-container/locales/fr-FR.json": "a001fc5918a6f1da88caf817618747480a4464e662a642bf4aab77ea3c67d6cd",
+  "v0.6.11/deepseek-harness-container/locales/ja-JP.json": "4515288aa2e486b1b1d5d7b65adce16dc18e10b0dc05cdb6adf353c764b1ef67",
+  "v0.6.11/deepseek-harness-container/locales/ko-KR.json": "43e014e210fb01d0725a3ca2e80fbd301ea5de67042620173afa33af438b0a12",
+  "v0.6.11/deepseek-harness-container/locales/pt-BR.json": "bdca03e0985ab782c2f4603b6d112508b62236895b705faa5849c7f14d89e542",
+  "v0.6.11/deepseek-harness-container/locales/ru-RU.json": "65da01d40876a81e4993202285c287756752a9112c141e976180445a21dc0073",
+  "v0.6.11/deepseek-harness-container/locales/zh-CN.json": "a98576b8b1c9afd15ecba80c7e649d29bc6cdd2126b9c40b1509da71caf82489",
+  "v0.6.11/deepseek-harness-container/locales/zh-TW.json": "dff75f0ce25c8204d02511c6441e72f31bf4544a82d28f7e4dde34f0cb8578c0",
+  "v0.6.11/deepseek-harness-container/redeven-service-template.json": "870db0d0d5dc8607d7b9bebd6315a738f634b2f8a37abb7f6a38316c2357445b"
 }

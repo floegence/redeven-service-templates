@@ -18,7 +18,7 @@ import (
 	"github.com/floegence/redeven-service-templates/template"
 )
 
-const CatalogVersion = "v0.6.11"
+const CatalogVersion = "v0.7.0"
 
 var Locales = []string{
 	"en-US", "zh-CN", "zh-TW", "ja-JP", "ko-KR",
@@ -287,7 +287,7 @@ func Verify(root string, output Output) error {
 }
 
 func validateDefinition(directory string, definition TemplateDefinition) error {
-	if (definition.SchemaVersion != 2 && definition.SchemaVersion != 3) || definition.TemplateID != directory || definition.ServiceFamilyID == "" || definition.RecommendedVersion == "" || definition.Revision < 1 || definition.DiskBytes < 1 {
+	if (definition.SchemaVersion != 2 && definition.SchemaVersion != 4) || definition.TemplateID != directory || definition.ServiceFamilyID == "" || definition.RecommendedVersion == "" || definition.Revision < 1 || definition.DiskBytes < 1 {
 		return errors.New("identity, recommended version, revision, or disk requirement is invalid")
 	}
 	if !validHTTPS(definition.SourceURL) || (definition.DockerSourceURL != "" && !validHTTPS(definition.DockerSourceURL)) {
@@ -303,8 +303,8 @@ func validateDefinition(directory string, definition TemplateDefinition) error {
 		SchemaVersion int    `json:"schema_version"`
 		Kind          string `json:"kind"`
 	}
-	if err := json.Unmarshal(definition.Spec, &specHeader); err != nil || specHeader.SchemaVersion != 6 || specHeader.Kind != definition.Deployment {
-		return errors.New("TemplateSpec v6 kind must match deployment")
+	if err := json.Unmarshal(definition.Spec, &specHeader); err != nil || specHeader.SchemaVersion != 7 || specHeader.Kind != definition.Deployment {
+		return errors.New("TemplateSpec v7 kind must match deployment")
 	}
 	var retiredPolicy struct {
 		Container *struct {
@@ -312,10 +312,10 @@ func validateDefinition(directory string, definition TemplateDefinition) error {
 		} `json:"container"`
 	}
 	if err := json.Unmarshal(definition.Spec, &retiredPolicy); err != nil {
-		return errors.New("TemplateSpec v6 is invalid")
+		return errors.New("TemplateSpec v7 is invalid")
 	}
 	if retiredPolicy.Container != nil && len(retiredPolicy.Container.ReleasePolicy) != 0 {
-		return errors.New("TemplateSpec v6 cannot restrict source release selection")
+		return errors.New("TemplateSpec v7 cannot restrict source release selection")
 	}
 	var lifecycle struct {
 		Host      map[string]json.RawMessage `json:"host"`

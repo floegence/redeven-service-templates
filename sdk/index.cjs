@@ -127,4 +127,21 @@ async function captureSource(input,token='',options={}){
  return {source,files,sha256:sourceDigest(files)};
 }
 
-module.exports={FILENAME,MAX_FILE_BYTES,MAX_DIRECTORY_BYTES,MAX_FILES,TemplateSourceError,sourceDigest,resolveSource,discoverSources,captureSource};
+function parseStartupURL(output, source) {
+ if(typeof output !== 'string' || Buffer.byteLength(output)>16*1024*1024)fail('OPENING_OUTPUT_LIMIT','The startup output exceeds its read limit.');
+ if(!source?.line_prefix)fail('OPENING_SOURCE_INVALID','The startup URL prefix is missing.');
+ let result;
+ for(const line of output.split('\n')) {
+  if(Buffer.byteLength(line)>=64*1024)fail('OPENING_OUTPUT_LIMIT','The startup output exceeds its line limit.');
+  if(result || !line.startsWith(source.line_prefix))continue;
+  const candidate=line.slice(source.line_prefix.length).trim().split(/\s+/)[0];
+  if(!candidate)continue;
+  let url;try{url=new URL(candidate)}catch{fail('OPENING_URL_INVALID','The startup output contains an invalid opening URL.')}
+  if(!['http:','https:'].includes(url.protocol)||!url.hostname||url.username||url.password)fail('OPENING_URL_INVALID','The startup output contains an invalid opening URL.');
+  result=candidate;
+ }
+ if(!result)fail('OPENING_URL_MISSING','No opening URL remains in this launch output. Restart explicitly to produce a new entrance.');
+ return result;
+}
+
+module.exports={parseStartupURL,FILENAME,MAX_FILE_BYTES,MAX_DIRECTORY_BYTES,MAX_FILES,TemplateSourceError,sourceDigest,resolveSource,discoverSources,captureSource};

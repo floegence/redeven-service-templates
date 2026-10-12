@@ -152,7 +152,7 @@ func decodeJSON(data []byte, target any) error {
 }
 
 func (c checkContext) checkTemplate(ctx context.Context, definition templateDefinition) error {
-	if (definition.SchemaVersion != 2 && definition.SchemaVersion != 3) || definition.TemplateID == "" || definition.RecommendedVersion == "" || definition.Deployment != "container" {
+	if (definition.SchemaVersion != 2 && definition.SchemaVersion != 3 && definition.SchemaVersion != 4) || definition.TemplateID == "" || definition.RecommendedVersion == "" || definition.Deployment != "container" {
 		return c.invalid(definition.TemplateID, "template identity or deployment is invalid")
 	}
 	if len(definition.PlatformArtifacts) == 0 {

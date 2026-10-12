@@ -26,7 +26,7 @@ func readDocument(raw []byte, legacy bool, files []File) (Document, int, error) 
 		return Document{}, 0, fail("TEMPLATE_SCHEMA_UNSUPPORTED", "The template declaration has no supported schema version.")
 	}
 	original := version
-	if (!legacy && version != DocumentVersion) || (legacy && (version < 1 || version > 2)) {
+	if (!legacy && version != 3 && version != DocumentVersion) || (legacy && (version < 1 || version > 2)) {
 		return Document{}, 0, fail("TEMPLATE_SCHEMA_UNSUPPORTED", "This Redeven Service Template version requires a compatible Redeven release.")
 	}
 	if legacy {
@@ -82,9 +82,10 @@ func readDocument(raw []byte, legacy bool, files []File) (Document, int, error) 
 	var execution struct {
 		SchemaVersion int `json:"schema_version"`
 	}
-	if err := json.Unmarshal(doc.Spec, &execution); err != nil || (original == 1 && execution.SchemaVersion != 3) || (original == 2 && (execution.SchemaVersion < 4 || execution.SchemaVersion > 6)) || (original == 3 && execution.SchemaVersion != 6) {
+	if err := json.Unmarshal(doc.Spec, &execution); err != nil || (original == 1 && execution.SchemaVersion != 3) || (original == 2 && (execution.SchemaVersion < 4 || execution.SchemaVersion > 6)) || (original == 3 && execution.SchemaVersion != 6) || (original == 4 && execution.SchemaVersion != 7) {
 		return Document{}, 0, fail("TEMPLATE_SCHEMA_UNSUPPORTED", "The document and execution versions do not belong to a published compatibility pair.")
 	}
+	doc.SchemaVersion = DocumentVersion
 	return doc, original, nil
 }
 
@@ -100,6 +101,11 @@ func NormalizeSpec(raw []byte) (Spec, int, error) {
 		return Spec{}, 0, fail("TEMPLATE_SCHEMA_UNSUPPORTED", "The template execution version requires a compatible Redeven release.")
 	}
 	original := version
+	if version < 7 {
+		if _, ok := fields["startup_url"]; ok {
+			return Spec{}, 0, fail("TEMPLATE_SPEC_INVALID", "The historical specification contains a newer opening source.")
+		}
+	}
 	if version < 6 {
 		var hostFields map[string]json.RawMessage
 		if host, ok := fields["host"]; ok {
@@ -154,6 +160,13 @@ func NormalizeSpec(raw []byte) (Spec, int, error) {
 	var spec Spec
 	if err := DecodeJSON(raw, &spec); err != nil {
 		return Spec{}, 0, fail("TEMPLATE_SPEC_INVALID", "The execution specification contains an invalid or unknown field.")
+	}
+	if original < 7 {
+		spec.SchemaVersion = SpecVersion
+		// Historical hook paths were ignored by the hook executor.
+		if spec.Host != nil && spec.Host.OpenScript != "" {
+			spec.Endpoint.Path = ""
+		}
 	}
 	if (spec.Kind == DeploymentHost && (spec.Container != nil || spec.Compose != nil)) || (spec.Kind == DeploymentContainer && (spec.Host != nil || spec.Compose != nil)) || (spec.Kind == DeploymentCompose && (spec.Host != nil || spec.Container != nil)) {
 		return Spec{}, 0, fail("TEMPLATE_SPEC_INVALID", "A template must declare exactly one deployment definition.")

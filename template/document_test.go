@@ -95,7 +95,7 @@ func TestBrandedTemplatePreservesSourceAndDefaultLocale(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if parsed.Document.Kind != Kind || parsed.Document.DefaultLocale != "zh-CN" || parsed.Spec.SchemaVersion != 6 {
+	if parsed.Document.Kind != Kind || parsed.Document.DefaultLocale != "zh-CN" || parsed.Spec.SchemaVersion != SpecVersion {
 		t.Fatalf("unexpected document: %+v", parsed)
 	}
 	if parsed.Localized("fr-FR").Name != "示例服务" {
@@ -139,7 +139,7 @@ func TestHistoricalReleasesRemainReadableWithoutChanges(t *testing.T) {
 		if hex.EncodeToString(sum[:]) != expected {
 			t.Fatalf("frozen historical input changed: %s", name)
 		}
-		if strings.HasSuffix(name, "/template.json") {
+		if strings.HasSuffix(name, "/template.json") || strings.HasSuffix(name, "/"+Filename) {
 			roots[filepath.Dir(name)] = true
 		}
 	}
@@ -154,7 +154,7 @@ func TestHistoricalReleasesRemainReadableWithoutChanges(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if parsed.Document.SchemaVersion != 3 || parsed.Spec.SchemaVersion != 6 || parsed.Document.DefaultLocale != "en-US" {
+			if parsed.Document.SchemaVersion != DocumentVersion || parsed.Spec.SchemaVersion != SpecVersion || parsed.Document.DefaultLocale != "en-US" {
 				t.Fatalf("historical template was not adapted: %+v", parsed.Document)
 			}
 			after, _ := json.Marshal(files)

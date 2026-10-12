@@ -57,12 +57,15 @@ func SchemaFor(t reflect.Type) map[string]any {
 // enforces semantic relationships, permissions, local assets, and limits.
 func Schemas() map[string]map[string]any {
 	result := map[string]map[string]any{}
-	for version := 3; version <= 6; version++ {
+	for version := 3; version <= 7; version++ {
 		shape := SchemaFor(reflect.TypeFor[Spec]())
 		if version < 6 {
 			shape = SchemaFor(reflect.TypeFor[legacyV5TemplateSpec]())
 		}
 		props := shape["properties"].(map[string]any)
+		if version < 7 {
+			delete(props, "startup_url")
+		}
 		props["schema_version"] = map[string]any{"const": version}
 		props["kind"] = map[string]any{"enum": []string{"host", "container", "compose"}}
 		if version < 5 {
@@ -76,12 +79,15 @@ func Schemas() map[string]map[string]any {
 		shape["title"] = "Redeven Service Template execution specification"
 		result[key] = shape
 	}
-	for version := 1; version <= 3; version++ {
+	for version := 1; version <= 4; version++ {
 		shape := SchemaFor(reflect.TypeFor[Document]())
 		props := shape["properties"].(map[string]any)
 		props["schema_version"] = map[string]any{"const": version}
 		props["kind"] = map[string]any{"const": Kind}
 		specVersions := []int{6}
+		if version == 4 {
+			specVersions = []int{7}
+		}
 		if version == 1 {
 			specVersions = []int{3}
 		}

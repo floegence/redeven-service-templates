@@ -29,7 +29,7 @@ func TestPublishedHostHooksCaptureAndReusePrivateOpeningInformation(t *testing.T
 		t.Fatal(err)
 	}
 	host := template.Spec.Host
-	if template.Spec.SchemaVersion != 6 || host.Output != "private_file" || host.AfterStart == "" || host.Open == "" {
+	if template.Spec.SchemaVersion != 7 || host.Output != "private_file" || host.AfterStart == "" || host.Open == "" {
 		t.Fatal("Host template must declare the independent-output lifecycle hooks")
 	}
 	root := t.TempDir()
@@ -46,7 +46,7 @@ func TestPublishedHostHooksCaptureAndReusePrivateOpeningInformation(t *testing.T
 	}
 	time.Sleep(100 * time.Millisecond)
 	const target = "http://127.0.0.1:39191/?token=private-test-credential"
-	if err := os.WriteFile(output, []byte("initializing\ndsh web: "+target+"\n"), 0600); err != nil {
+	if err := os.WriteFile(output, []byte("initializing\ndsh web: "+target+" (LAN: http://192.0.2.1:39191/)\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
 	if err := cmd.Wait(); err != nil {

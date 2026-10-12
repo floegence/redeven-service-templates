@@ -102,7 +102,8 @@ func main() {
 		out.WriteString(definitions[name])
 		out.WriteString("\n")
 	}
-	out.WriteString(`export const FILENAME: 'redeven-service-template.json';
+	out.WriteString(`export function parseStartupURL(output: string, source: StartupURLSpec): string;
+export const FILENAME: 'redeven-service-template.json';
 export const MAX_FILE_BYTES: number;
 export const MAX_DIRECTORY_BYTES: number;
 export const MAX_FILES: number;

@@ -179,12 +179,17 @@ export interface SourceEntry {
 
 export interface Spec {
   schema_version: number;
+  startup_url?: StartupURLSpec;
   kind: 'host' | 'container' | 'compose';
   endpoint: WebEndpointSpec;
   parameters?: Array<TemplateParameter>;
   host?: HostTemplateSpec;
   container?: ContainerTemplateSpec;
   compose?: ComposeTemplateSpec;
+}
+
+export interface StartupURLSpec {
+  line_prefix: string;
 }
 
 export interface TemplateParameter {
@@ -206,6 +211,7 @@ export interface WebEndpointSpec {
   startup_timeout_sec?: number;
 }
 
+export function parseStartupURL(output: string, source: StartupURLSpec): string;
 export const FILENAME: 'redeven-service-template.json';
 export const MAX_FILE_BYTES: number;
 export const MAX_DIRECTORY_BYTES: number;

@@ -15,8 +15,8 @@ import (
 const (
 	Kind                = "redeven.service-template"
 	Filename            = "redeven-service-template.json"
-	DocumentVersion     = 3
-	SpecVersion         = 6
+	DocumentVersion     = 4
+	SpecVersion         = 7
 	ArtifactPlaceholder = "${REDEVEN_CATALOG_ARTIFACT}"
 )
 

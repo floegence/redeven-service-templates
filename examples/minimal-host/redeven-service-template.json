@@ -1,6 +1,6 @@
 {
   "kind": "redeven.service-template",
-  "schema_version": 3,
+  "schema_version": 4,
   "template_id": "example-web",
   "service_family_id": "example-web",
   "revision": 1,
@@ -9,7 +9,7 @@
     "en-US"
   ],
   "spec": {
-    "schema_version": 6,
+    "schema_version": 7,
     "kind": "host",
     "endpoint": {
       "scheme": "http"
