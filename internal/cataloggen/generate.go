@@ -18,7 +18,7 @@ import (
 	"github.com/floegence/redeven-service-templates/template"
 )
 
-const CatalogVersion = "v0.7.8"
+const CatalogVersion = "v0.7.9"
 
 var Locales = []string{
 	"en-US", "zh-CN", "zh-TW", "ja-JP", "ko-KR",
