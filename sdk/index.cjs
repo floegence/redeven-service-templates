@@ -144,4 +144,19 @@ function parseStartupURL(output, source) {
  return result;
 }
 
-module.exports={parseStartupURL,FILENAME,MAX_FILE_BYTES,MAX_DIRECTORY_BYTES,MAX_FILES,TemplateSourceError,sourceDigest,resolveSource,discoverSources,captureSource};
+function verifySourceExpectation(snapshot,expected){
+ if(!Number.isSafeInteger(expected?.repository_id)||expected.repository_id<1||!shaPattern.test(expected.commit_sha)||! /^[a-f0-9]{64}$/u.test(expected.sha256))fail('TEMPLATE_SOURCE_INVALID','The expected source identity is invalid.');
+ if(snapshot.source.repository_id!==expected.repository_id||snapshot.source.commit_sha!==expected.commit_sha||snapshot.sha256!==expected.sha256||sourceDigest(snapshot.files)!==expected.sha256)fail('TEMPLATE_SOURCE_EXPECTATION_MISMATCH','The source differs from the selected repository, commit, or directory digest.');
+}
+async function capturePinnedSource(input,expected,token='',options={}){
+ const parsed=parseSource(input);
+ if(parsed.tail.length||!parsed.ref)fail('TEMPLATE_SOURCE_INVALID','Pinned acquisition requires an explicit repository, ref, and directory.');
+ if(!Number.isSafeInteger(expected?.repository_id)||expected.repository_id<1||!shaPattern.test(expected.commit_sha)||! /^[a-f0-9]{64}$/u.test(expected.sha256))fail('TEMPLATE_SOURCE_INVALID','The expected source identity is invalid.');
+ const snapshot=await captureSource({repository:parsed.repository,ref:expected.commit_sha,path:parsed.path},token,options);
+ snapshot.source.ref=parsed.ref;verifySourceExpectation(snapshot,expected);return snapshot;
+}
+function sourceIdentity(repositoryID,documentID){
+ if(!Number.isSafeInteger(repositoryID)||repositoryID<1||typeof documentID!=='string'||!documentID)fail('TEMPLATE_SOURCE_INVALID','The source identity is invalid.');
+ return 'git_'+createHash('sha256').update(String(repositoryID)+'\0'+documentID+'\0').digest('hex').slice(0,48);
+}
+module.exports={sourceIdentity,verifySourceExpectation,capturePinnedSource,parseStartupURL,FILENAME,MAX_FILE_BYTES,MAX_DIRECTORY_BYTES,MAX_FILES,TemplateSourceError,sourceDigest,resolveSource,discoverSources,captureSource};

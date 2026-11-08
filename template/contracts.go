@@ -9,7 +9,7 @@ import (
 // ContractTypes is the public, data-only SDK type surface. Execution remains
 // owned by the host; acquisition options are declared in the SDK generator.
 func ContractTypes() []reflect.Type {
-	return []reflect.Type{reflect.TypeFor[Document](), reflect.TypeFor[Spec](), reflect.TypeFor[Localization](), reflect.TypeFor[IconAsset](), reflect.TypeFor[GitSource](), reflect.TypeFor[ResolvedSource](), reflect.TypeFor[Snapshot](), reflect.TypeFor[SourceCatalog]()}
+	return []reflect.Type{reflect.TypeFor[Document](), reflect.TypeFor[Spec](), reflect.TypeFor[Localization](), reflect.TypeFor[IconAsset](), reflect.TypeFor[GitSource](), reflect.TypeFor[ResolvedSource](), reflect.TypeFor[Snapshot](), reflect.TypeFor[SourceCatalog](), reflect.TypeFor[SourceExpectation](), reflect.TypeFor[MarketTemplate]()}
 }
 
 func SchemaFor(t reflect.Type) map[string]any {
@@ -123,5 +123,6 @@ func Schemas() map[string]map[string]any {
 		result["redeven-service-template-v"+string(rune('0'+version))+".schema.json"] = shape
 	}
 	result["redeven-service-template-localization.schema.json"] = SchemaFor(reflect.TypeFor[Localization]())
+	result["redeven-service-template-market.schema.json"] = SchemaFor(reflect.TypeFor[MarketTemplate]())
 	return result
 }

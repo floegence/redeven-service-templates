@@ -165,3 +165,27 @@ an immutable Go module tag through `scripts/publish_catalog.sh`. It never moves
 a tag or upgrades installed services. Contract and historical tests are required
 for both manual and automated publication. The acquisition SDK has an independent
 package version; catalog-only patches need not republish unchanged SDK bytes.
+
+## Public market publication
+
+Add the `redeven-service-template` GitHub repository topic to opt a public
+repository into automatic discovery. Publish one root template or independent
+`templates/<name>/` directories on the default branch. No registration, index
+file, or Release archive is required. Keep unfinished changes on other branches.
+A template directory is the publication unit: increase `revision` for every
+intentional change, including helper scripts, icons and translations. A market
+must reject changed bytes for an already observed revision and must not downgrade
+its current recommendation. Application versions remain independent.
+
+`InspectMarketTemplate` (or the stdin JSON `inspect-market-template` command)
+derives passive catalog evidence from a verified snapshot. `SourceIdentity`
+preserves the existing repository-ID/declaration-ID namespace. A source
+expectation binds repository ID, exact commit and whole-directory SHA-256.
+`CapturePinned` / `capturePinnedSource` fetch that commit while retaining the
+explicit tracking ref; they never substitute the latest branch. Receivers must
+revalidate transferred bytes against the expectation. Market metadata grants no
+execution authority. Discovery and previews never run template code.
+
+Public catalog refresh may announce a candidate; it never changes accepted
+source directories or installed instances. Existing manual source acquisition
+and all historical formats retain their previous behavior.

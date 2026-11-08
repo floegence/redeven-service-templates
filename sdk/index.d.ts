@@ -133,6 +133,24 @@ export interface LocalizedNotice {
   description: string;
 }
 
+export interface MarketTemplate {
+  template_id: string;
+  document_template_id: string;
+  service_family_id: string;
+  revision: number;
+  source: ResolvedSource;
+  sha256: string;
+  source_document_version: number;
+  source_spec_version: number;
+  default_locale: string;
+  localizations: Record<string, Localization>;
+  icon?: IconAsset;
+  deployment: 'host' | 'container' | 'compose';
+  supported_platforms: Array<string>;
+  recommended_version?: string;
+  developer_preview: boolean;
+}
+
 export interface NPMHostPackageSpec {
   package_name: string;
   version: string;
@@ -175,6 +193,12 @@ export interface SourceCatalog {
 export interface SourceEntry {
   path: string;
   entrypoint: string;
+}
+
+export interface SourceExpectation {
+  repository_id: number;
+  commit_sha: string;
+  sha256: string;
 }
 
 export interface Spec {
@@ -222,6 +246,9 @@ export interface AcquisitionOptions {
   fetch?: typeof globalThis.fetch;
   onProgress?: (progress: {phase: 'downloading'; files: number; bytes: number}) => void;
 }
+export function sourceIdentity(repositoryID: number, documentID: string): string;
+export function verifySourceExpectation(snapshot: Snapshot, expected: SourceExpectation): void;
+export function capturePinnedSource(input: GitSource, expected: SourceExpectation, token?: string, options?: AcquisitionOptions): Promise<Snapshot>;
 export function sourceDigest(files: File[]): string;
 export function resolveSource(input: GitSource, token?: string, options?: AcquisitionOptions): Promise<ResolvedSource>;
 export function discoverSources(input: GitSource, token?: string, options?: AcquisitionOptions): Promise<SourceCatalog>;

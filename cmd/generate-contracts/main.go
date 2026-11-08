@@ -113,6 +113,9 @@ export interface AcquisitionOptions {
   fetch?: typeof globalThis.fetch;
   onProgress?: (progress: {phase: 'downloading'; files: number; bytes: number}) => void;
 }
+export function sourceIdentity(repositoryID: number, documentID: string): string;
+export function verifySourceExpectation(snapshot: Snapshot, expected: SourceExpectation): void;
+export function capturePinnedSource(input: GitSource, expected: SourceExpectation, token?: string, options?: AcquisitionOptions): Promise<Snapshot>;
 export function sourceDigest(files: File[]): string;
 export function resolveSource(input: GitSource, token?: string, options?: AcquisitionOptions): Promise<ResolvedSource>;
 export function discoverSources(input: GitSource, token?: string, options?: AcquisitionOptions): Promise<SourceCatalog>;

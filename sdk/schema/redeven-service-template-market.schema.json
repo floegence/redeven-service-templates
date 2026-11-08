@@ -1,0 +1,149 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "default_locale": {
+      "type": "string"
+    },
+    "deployment": {
+      "type": "string"
+    },
+    "developer_preview": {
+      "type": "boolean"
+    },
+    "document_template_id": {
+      "type": "string"
+    },
+    "icon": {
+      "additionalProperties": false,
+      "properties": {
+        "data": {
+          "type": "string"
+        },
+        "media_type": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "media_type",
+        "data",
+        "sha256"
+      ],
+      "type": "object"
+    },
+    "localizations": {
+      "additionalProperties": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "notices": {
+            "additionalProperties": {
+              "additionalProperties": false,
+              "properties": {
+                "description": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "title",
+                "description"
+              ],
+              "type": "object"
+            },
+            "type": "object"
+          }
+        },
+        "required": [
+          "name",
+          "description"
+        ],
+        "type": "object"
+      },
+      "type": "object"
+    },
+    "recommended_version": {
+      "type": "string"
+    },
+    "revision": {
+      "type": "integer"
+    },
+    "service_family_id": {
+      "type": "string"
+    },
+    "sha256": {
+      "type": "string"
+    },
+    "source": {
+      "additionalProperties": false,
+      "properties": {
+        "commit_sha": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "ref": {
+          "type": "string"
+        },
+        "repository": {
+          "type": "string"
+        },
+        "repository_id": {
+          "type": "integer"
+        },
+        "tree_sha": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "repository",
+        "repository_id",
+        "ref",
+        "path",
+        "commit_sha"
+      ],
+      "type": "object"
+    },
+    "source_document_version": {
+      "type": "integer"
+    },
+    "source_spec_version": {
+      "type": "integer"
+    },
+    "supported_platforms": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "template_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "template_id",
+    "document_template_id",
+    "service_family_id",
+    "revision",
+    "source",
+    "sha256",
+    "source_document_version",
+    "source_spec_version",
+    "default_locale",
+    "localizations",
+    "deployment",
+    "supported_platforms",
+    "developer_preview"
+  ],
+  "type": "object"
+}
