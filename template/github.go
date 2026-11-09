@@ -65,7 +65,7 @@ func validRef(value string) bool {
 	return value != "" && len(value) <= 256 && !strings.ContainsAny(value, "\x00\r\n\\?#") && !strings.Contains(value, "..")
 }
 
-// GitHubClient uses only the GitHub HTTPS API. Client may provide a host-owned
+// GitHubClient uses GitHub HTTPS API and anonymous pinned archives. Client may provide a host-owned
 // transport; redirects always fail closed and never forward credentials.
 type GitHubClient struct{ Client *http.Client }
 

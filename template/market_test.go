@@ -54,7 +54,7 @@ func TestPinnedCaptureNeverResolvesTrackingBranch(t *testing.T) {
 		raw, _ := json.Marshal(result)
 		return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(string(raw))), Header: make(http.Header)}, nil
 	})}}
-	_, err := client.CapturePinned(context.Background(), GitSource{Repository: "example/templates", Ref: "main"}, SourceExpectation{123, commit, strings.Repeat("c", 64)}, "")
+	_, err := client.CapturePinned(context.Background(), GitSource{Repository: "example/templates", Ref: "main"}, SourceExpectation{123, commit, strings.Repeat("c", 64)}, "temporary-token")
 	if err == nil {
 		t.Fatal("accepted changed commit")
 	}

@@ -113,12 +113,19 @@ configuration or applied instance identity.
 
 ## GitHub source contract
 
-Both SDKs resolve repository, ref, and directory to an exact commit through the
-GitHub HTTPS API. They do not use `git`, download Release assets, install service
+Unpinned sources and credentialed requests resolve repository, ref, and directory
+to an exact commit through the GitHub HTTPS API. Public market selections already
+carry a repository ID, commit SHA and directory SHA-256; both SDKs acquire those
+anonymous pinned sources in one request to the exact commit archive on
+`codeload.github.com`, without consuming REST API quota. The repository ID is
+retained from the selected expectation, not independently re-observed by the
+archive path. Commit metadata and the complete directory digest must match.
+There is no automatic retry, API fallback, moving-ref substitution or credential
+forwarding to the archive host. They do not use `git`, download Release assets, install service
 packages, or execute scripts. Repository, directory, and declaration links work;
 an omitted ref uses GitHub's actual default branch. Root templates and immediate
 `templates/` children can be discovered for selection. Public and private
-repositories use the same API; a private token needs repository Contents read
+repositories without a pinned expectation use the API; a private token needs repository Contents read
 access and is ephemeral. It is sent only to `api.github.com`, with redirects
 rejected, and never appears in snapshots or safe error messages.
 
@@ -132,7 +139,11 @@ Published limits: 1,024 files, 2 MiB per file, 16 MiB in total, 1,024 UTF-8 byte
 per relative path, 32 directory levels, and 100 discovery candidates. Reject
 symlinks, submodules, Git LFS pointers, case-insensitive path collisions,
 file/directory collisions, traversal, and incomplete API results. Retain only
-regular Git modes `100644` and `100755`. No `.git` history is needed.
+regular Git modes `100644` and `100755`. No `.git` history is needed. Archive acquisition also bounds the compressed body
+to 64 MiB, decompressed tar to 128 MiB and scanned entries to 100,000. Archives
+are parsed in memory without filesystem extraction; original regular-file modes
+are normalized to Git executable/non-executable modes before digest validation.
+Unsupported or oversized archives fail explicitly; they never widen source scope.
 
 Directory SHA-256 hashes UTF-8 byte-sorted records of
 `path + NUL + mode + NUL + lowercase-SHA256(file-bytes) + LF`. All files count,

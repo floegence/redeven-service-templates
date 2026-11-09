@@ -152,7 +152,7 @@ async function capturePinnedSource(input,expected,token='',options={}){
  const parsed=parseSource(input);
  if(parsed.tail.length||!parsed.ref)fail('TEMPLATE_SOURCE_INVALID','Pinned acquisition requires an explicit repository, ref, and directory.');
  if(!Number.isSafeInteger(expected?.repository_id)||expected.repository_id<1||!shaPattern.test(expected.commit_sha)||! /^[a-f0-9]{64}$/u.test(expected.sha256))fail('TEMPLATE_SOURCE_INVALID','The expected source identity is invalid.');
- const snapshot=await captureSource({repository:parsed.repository,ref:expected.commit_sha,path:parsed.path},token,options);
+ const snapshot=token?await captureSource({repository:parsed.repository,ref:expected.commit_sha,path:parsed.path},token,options):await require('./public-archive.cjs')(parsed,expected,options,{fail,validPath,sourceDigest});
  snapshot.source.ref=parsed.ref;verifySourceExpectation(snapshot,expected);return snapshot;
 }
 function sourceIdentity(repositoryID,documentID){

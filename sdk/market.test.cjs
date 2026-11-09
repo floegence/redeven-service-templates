@@ -9,7 +9,7 @@ test('pinned acquisition never follows moving tracking ref and verifies transfer
  else if(endpoint==='/repos/example/templates/git/trees/'+commit)result={sha:commit,tree:[{path:files[0].path,mode:'100644',type:'blob',sha:blob,size:2}]};
  else if(endpoint==='/repos/example/templates/git/blobs/'+blob)result={sha:blob,size:2,encoding:'base64',content:files[0].content};
  else assert.fail(endpoint);return new Response(JSON.stringify(result));};
- const s=await capturePinnedSource({repository:'example/templates',ref:'main'},expected,'',{fetch});assert.equal(s.source.ref,'main');verifySourceExpectation(s,expected);
+ const s=await capturePinnedSource({repository:'example/templates',ref:'main'},expected,'temporary-token',{fetch});assert.equal(s.source.ref,'main');verifySourceExpectation(s,expected);
  for(const changed of [{...expected,repository_id:124},{...expected,commit_sha:'b'.repeat(40)},{...expected,sha256:'c'.repeat(64)}])assert.throws(()=>verifySourceExpectation(s,changed));
  await assert.rejects(capturePinnedSource({repository:'example/templates',ref:'main'},{...expected,commit_sha:'main'},'',{fetch:()=>assert.fail('network')}));
 });

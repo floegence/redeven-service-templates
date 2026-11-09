@@ -60,6 +60,9 @@ func (c *GitHubClient) CapturePinned(ctx context.Context, input GitSource, expec
 	if len(tail) != 0 || source.Ref == "" {
 		return Snapshot{}, fail("TEMPLATE_SOURCE_INVALID", "Pinned acquisition requires an explicit repository, ref, and directory.")
 	}
+	if token == "" {
+		return c.capturePublicArchive(ctx, source, expected)
+	}
 	trackingRef := source.Ref
 	source.Ref = expected.CommitSHA
 	resolved, err := c.Resolve(ctx, source, token)
